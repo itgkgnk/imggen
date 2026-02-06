@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>画像生成ツール 2026 Multi-Line Edition</title>
+    <title>画像生成ツール 2026 Template Edition</title>
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #1a1a1c; color: #e0e0e0; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
         .controls { background: #2c2c2e; padding: 20px; border-radius: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-width: 1100px; width: 95%; border: 1px solid #3a3a3c; }
@@ -14,11 +14,13 @@
         input[type="range"] { padding: 0; }
         .toggle-area { grid-column: 1 / -1; background: #3a3a3c; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; cursor: pointer; border: 1px solid #444; }
         .save-btn { grid-column: 1 / -1; background: #30d158; font-size: 18px; margin-top: 10px; padding: 15px; border: none; font-weight: bold; cursor: pointer; color: white; }
-        .save-btn:hover { background: #28b34b; }
+        .template-area { grid-column: 1 / -1; background: #252526; padding: 15px; border-radius: 8px; border: 1px dashed #555; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .template-btn { background: #555; padding: 5px 15px; font-size: 12px; }
+        .template-btn:hover { background: #777; }
+        .export-btn { background: #007aff; }
         hr { grid-column: 1 / -1; width: 100%; border: 0; border-top: 1px solid #444; margin: 5px 0; }
         .line-config { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; align-items: center; margin-bottom: 5px; }
         .advanced-only { display: none; }
-        #line4-row { display: grid; } /* 初期表示用 */
     </style>
 </head>
 <body>
@@ -26,6 +28,17 @@
     <h2 style="margin-bottom: 20px;">画像生成ツール (1920x1080)</h2>
 
     <div class="controls">
+        <div class="template-area">
+            <label style="width:100%; margin-bottom:5px;">テンプレート管理:</label>
+            <button class="template-btn" onclick="saveToBrowser()">現在の設定をブラウザに保存</button>
+            <button class="template-btn" onclick="loadFromBrowser()">保存した設定を読込</button>
+            <button class="template-btn export-btn" onclick="exportConfig()">設定をファイルで記録 (.json)</button>
+            <input type="file" id="importFile" accept=".json" style="display:none" onchange="importConfig(event)">
+            <button class="template-btn export-btn" onclick="document.getElementById('importFile').click()">記録ファイルを読込</button>
+        </div>
+
+        <hr>
+
         <div class="control-group">
             <label>背景色</label>
             <input type="color" id="bgColor" value="#BEBEE6">
@@ -97,27 +110,21 @@
 
         <div class="toggle-area">
             <input type="checkbox" id="advancedToggle">
-            <label for="advancedToggle" style="cursor:pointer; color: #30d158;">詳細拡張モード (行ごとに色を変える)</label>
+            <label for="advancedToggle" style="cursor:pointer; color: #30d158;">詳細拡張モード (個別色設定)</label>
         </div>
 
         <div style="grid-column: 1 / -1;">
             <div class="line-config">
-                <label>テキスト内容</label>
-                <label class="advanced-only">文字色</label>
-                <label class="advanced-only">縁色</label>
-            </div>
-            
-            <div class="line-config" id="line1-row">
                 <input type="text" id="line1" value="タイトル">
                 <input type="color" id="color1" value="#FFFFFF" class="advanced-only">
                 <input type="color" id="stroke1" value="#464678" class="advanced-only">
             </div>
-            <div class="line-config" id="line2-row">
+            <div class="line-config">
                 <input type="text" id="line2" value="2026年 1月">
                 <input type="color" id="color2" value="#FFFFFF" class="advanced-only">
                 <input type="color" id="stroke2" value="#464678" class="advanced-only">
             </div>
-            <div class="line-config" id="line3-row">
+            <div class="line-config">
                 <input type="text" id="line3" value="内容">
                 <input type="color" id="color3" value="#FFFFFF" class="advanced-only">
                 <input type="color" id="stroke3" value="#464678" class="advanced-only">
@@ -137,31 +144,80 @@
     <script>
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
-        const allInputs = document.querySelectorAll('input, select');
+        const inputIds = [
+            'bgColor', 'lineCount', 'line1', 'line2', 'line3', 'line4', 
+            'color1', 'color2', 'color3', 'color4',
+            'stroke1', 'stroke2', 'stroke3', 'stroke4',
+            'fontFamily', 'fontSize', 'lineHeight', 'imageAlign', 
+            'borderColor', 'borderWidth', 'textStrokeWidth', 
+            'globalTextColor', 'globalTextStrokeColor', 'advancedToggle'
+        ];
+        
         let uploadedImage = null;
 
         window.onload = draw;
 
-        allInputs.forEach(input => {
-            input.addEventListener('input', () => {
-                // 詳細拡張の切り替え
-                if (input.id === 'advancedToggle') {
-                    const isAdv = input.checked;
-                    document.querySelectorAll('.advanced-only').forEach(el => el.style.display = isAdv ? 'block' : 'none');
-                    document.querySelectorAll('.standard-ui').forEach(el => el.style.display = isAdv ? 'none' : 'block');
+        inputIds.forEach(id => {
+            const el = document.getElementById(id);
+            el.addEventListener('input', () => {
+                if (id === 'advancedToggle') {
+                    const isAdv = el.checked;
+                    document.querySelectorAll('.advanced-only').forEach(e => e.style.display = isAdv ? 'block' : 'none');
+                    document.querySelectorAll('.standard-ui').forEach(e => e.style.display = isAdv ? 'none' : 'block');
                 }
-                // 行数切り替え時のUI制御
-                if (input.id === 'lineCount') {
-                    const count = parseInt(input.value);
-                    document.getElementById('line4-row').style.display = (count === 4) ? 'grid' : 'none';
+                if (id === 'lineCount') {
+                    document.getElementById('line4-row').style.display = (el.value === "4") ? 'grid' : 'none';
                 }
-                
-                const valDisp = document.getElementById(input.id + 'Val');
-                if (valDisp) valDisp.innerText = input.value;
+                const valDisp = document.getElementById(id + 'Val');
+                if (valDisp) valDisp.innerText = el.value;
                 draw();
             });
         });
 
+        // テンプレート機能：ブラウザ保存
+        function saveToBrowser() {
+            const config = {};
+            inputIds.forEach(id => config[id] = document.getElementById(id)[id === 'advancedToggle' ? 'checked' : 'value']);
+            localStorage.setItem('imggen_config', JSON.stringify(config));
+            alert("ブラウザに保存しました。次回起動時や読み込みボタンで復元できます。");
+        }
+
+        function loadFromBrowser() {
+            const saved = localStorage.getItem('imggen_config');
+            if (!saved) return alert("保存されたデータがありません。");
+            applyConfig(JSON.parse(saved));
+        }
+
+        // テンプレート機能：ファイル記録 (JSON)
+        function exportConfig() {
+            const config = {};
+            inputIds.forEach(id => config[id] = document.getElementById(id)[id === 'advancedToggle' ? 'checked' : 'value']);
+            const blob = new Blob([JSON.stringify(config, null, 2)], {type: 'application/json'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `template_${new Date().toLocaleDateString()}.json`;
+            a.click();
+        }
+
+        function importConfig(event) {
+            const reader = new FileReader();
+            reader.onload = (e) => applyConfig(JSON.parse(e.target.result));
+            reader.readAsText(event.target.files[0]);
+        }
+
+        function applyConfig(config) {
+            Object.keys(config).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (id === 'advancedToggle') el.checked = config[id];
+                    else el.value = config[id];
+                    el.dispatchEvent(new Event('input'));
+                }
+            });
+            draw();
+        }
+
+        // 画像アップロード
         document.getElementById('imageUpload').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -186,11 +242,9 @@
             const align = document.getElementById('imageAlign').value;
             const lineCount = parseInt(document.getElementById('lineCount').value);
 
-            // 1. 背景
             ctx.fillStyle = bgColor;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 2. 画像
             if (uploadedImage) {
                 const scale = Math.min(canvas.width / uploadedImage.width, canvas.height / uploadedImage.height) * 0.7;
                 const imgW = uploadedImage.width * scale;
@@ -201,14 +255,12 @@
                 ctx.drawImage(uploadedImage, x, (canvas.height / 2) - (imgH / 2), imgW, imgH);
             }
 
-            // 3. テキスト描画設定 (角ばらせる設定)
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.font = `bold ${fontSize}px ${font}`;
             ctx.lineJoin = "miter"; 
             ctx.miterLimit = 2;
 
-            // 選択された行数に合わせて中央位置を計算
             const startY = (canvas.height / 2) - (((lineCount - 1) * lHeight) / 2);
 
             for (let i = 0; i < lineCount; i++) {
@@ -219,21 +271,17 @@
 
                 ctx.shadowColor = "rgba(0,0,0,0.5)";
                 ctx.shadowBlur = 15;
-
                 if (textStrokeWidth > 0) {
                     ctx.strokeStyle = strokeColor;
                     ctx.lineWidth = textStrokeWidth;
                     ctx.strokeText(text, canvas.width / 2, yPos);
                 }
-
                 ctx.shadowColor = "transparent";
                 ctx.fillStyle = textColor;
                 ctx.fillText(text, canvas.width / 2, yPos);
             }
 
-            // 4. 全体の外枠
             if (borderWidth > 0) {
-                ctx.shadowColor = "transparent";
                 ctx.strokeStyle = borderColor;
                 ctx.lineWidth = borderWidth;
                 const offset = borderWidth / 2;
@@ -243,7 +291,7 @@
 
         document.getElementById('saveBtn').addEventListener('click', () => {
             const link = document.createElement('a');
-            link.download = `img_gen_${Date.now()}.png`;
+            link.download = `gen_${Date.now()}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
         });
