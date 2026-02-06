@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>画像生成ツール 2026 Final Square</title>
+    <title>画像生成ツール 2026 Square-Edge Edition</title>
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #1a1a1c; color: #e0e0e0; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
         .controls { background: #2c2c2e; padding: 20px; border-radius: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-width: 1100px; width: 95%; border: 1px solid #3a3a3c; }
@@ -12,8 +12,9 @@
         canvas { border: none; max-width: 100%; height: auto; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
         input, select, button { padding: 10px; border-radius: 6px; border: 1px solid #3a3a3c; background: #1c1c1e; color: white; font-size: 13px; }
         input[type="range"] { padding: 0; }
-        .toggle-area { grid-column: 1 / -1; background: #3a3a3c; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
-        .save-btn { grid-column: 1 / -1; background: #30d158; font-size: 18px; margin-top: 10px; padding: 15px; border: none; font-weight: bold; cursor: pointer; }
+        .toggle-area { grid-column: 1 / -1; background: #3a3a3c; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; cursor: pointer; border: 1px solid #444; }
+        .save-btn { grid-column: 1 / -1; background: #30d158; font-size: 18px; margin-top: 10px; padding: 15px; border: none; font-weight: bold; cursor: pointer; color: white; }
+        .save-btn:hover { background: #28b34b; }
         hr { grid-column: 1 / -1; width: 100%; border: 0; border-top: 1px solid #444; margin: 5px 0; }
         .line-config { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; align-items: center; margin-bottom: 5px; }
         .advanced-only { display: none; }
@@ -49,7 +50,7 @@
         </div>
         <div class="control-group">
             <label>全体枠の太さ: <span id="borderWidthVal">40</span>px</label>
-            <input type="range" id="borderWidth" min="0" max="100" value="40">
+            <input type="range" id="borderWidth" min="0" max="150" value="40">
         </div>
 
         <hr>
@@ -57,7 +58,7 @@
         <div class="control-group">
             <label>フォント</label>
             <select id="fontFamily">
-                <option value="'Courier New', monospace">等幅（マイクラ風）</option>
+                <option value="'Courier New', monospace">等幅</option>
                 <option value="sans-serif">和文ゴシック</option>
                 <option value="serif">和文明朝</option>
             </select>
@@ -72,7 +73,7 @@
         </div>
         <div class="control-group">
             <label>文字の縁の太さ: <span id="textStrokeWidthVal">10</span>px</label>
-            <input type="range" id="textStrokeWidth" min="0" max="30" value="10">
+            <input type="range" id="textStrokeWidth" min="0" max="50" value="10">
         </div>
 
         <div class="control-group standard-ui">
@@ -88,14 +89,14 @@
 
         <div class="toggle-area">
             <input type="checkbox" id="advancedToggle">
-            <label for="advancedToggle" style="cursor:pointer; color: #30d158;">詳細拡張モード (行ごとの色設定)</label>
+            <label for="advancedToggle" style="cursor:pointer; color: #30d158;">詳細拡張モード (行ごとに色を変える)</label>
         </div>
 
         <div style="grid-column: 1 / -1;">
             <div class="line-config">
-                <label>テキスト内容</label>
+                <label>テキスト内容 (4行固定)</label>
                 <label class="advanced-only">文字色</label>
-                <label class="advanced-only">縁の色</label>
+                <label class="advanced-only">縁色</label>
             </div>
             
             <div class="line-config">
@@ -128,7 +129,6 @@
     <script>
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
-        
         const allInputs = document.querySelectorAll('input, select');
         let uploadedImage = null;
 
@@ -185,12 +185,12 @@
                 ctx.drawImage(uploadedImage, x, (canvas.height / 2) - (imgH / 2), imgW, imgH);
             }
 
-            // 3. テキスト
+            // 3. テキスト描画設定 (★角を尖らせる設定)
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.font = `bold ${fontSize}px ${font}`;
-            // ctx.lineJoin = "round";  <-- これを削除しました（角ばらせるため）
-            ctx.miterLimit = 2;
+            ctx.lineJoin = "miter"; // 角を尖らせる
+            ctx.miterLimit = 2;     // トゲが出過ぎるのを防止
 
             const startY = (canvas.height / 2) - ((3 * lHeight) / 2);
 
@@ -200,22 +200,26 @@
                 const textColor = isAdvanced ? document.getElementById(`color${i+1}`).value : document.getElementById('globalTextColor').value;
                 const strokeColor = isAdvanced ? document.getElementById(`stroke${i+1}`).value : document.getElementById('globalTextStrokeColor').value;
 
+                // 影
                 ctx.shadowColor = "rgba(0,0,0,0.5)";
                 ctx.shadowBlur = 15;
 
+                // 文字の縁取り
                 if (textStrokeWidth > 0) {
                     ctx.strokeStyle = strokeColor;
                     ctx.lineWidth = textStrokeWidth;
                     ctx.strokeText(text, canvas.width / 2, yPos);
                 }
 
+                // 文字本体
                 ctx.shadowColor = "transparent";
                 ctx.fillStyle = textColor;
                 ctx.fillText(text, canvas.width / 2, yPos);
             }
 
-            // 4. 外枠
+            // 4. 外枠 (40px Default)
             if (borderWidth > 0) {
+                ctx.shadowColor = "transparent";
                 ctx.strokeStyle = borderColor;
                 ctx.lineWidth = borderWidth;
                 const offset = borderWidth / 2;
@@ -225,7 +229,7 @@
 
         document.getElementById('saveBtn').addEventListener('click', () => {
             const link = document.createElement('a');
-            link.download = `image_2026_advanced.png`;
+            link.download = `generated_image_${Date.now()}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
         });
