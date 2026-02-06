@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>画像生成ツール 2026 Advanced</title>
+    <title>画像生成ツール 2026 Final Square</title>
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #1a1a1c; color: #e0e0e0; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
         .controls { background: #2c2c2e; padding: 20px; border-radius: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-width: 1100px; width: 95%; border: 1px solid #3a3a3c; }
@@ -129,7 +129,6 @@
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
         
-        // 全ての入力を監視対象に
         const allInputs = document.querySelectorAll('input, select');
         let uploadedImage = null;
 
@@ -161,7 +160,6 @@
         });
 
         function draw() {
-            // 値の取得
             const isAdvanced = document.getElementById('advancedToggle').checked;
             const bgColor = document.getElementById('bgColor').value;
             const borderColor = document.getElementById('borderColor').value;
@@ -172,11 +170,11 @@
             const textStrokeWidth = parseInt(document.getElementById('textStrokeWidth').value);
             const align = document.getElementById('imageAlign').value;
 
-            // 1. 背景描画
+            // 1. 背景
             ctx.fillStyle = bgColor;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 2. 画像描画
+            // 2. 画像
             if (uploadedImage) {
                 const scale = Math.min(canvas.width / uploadedImage.width, canvas.height / uploadedImage.height) * 0.7;
                 const imgW = uploadedImage.width * scale;
@@ -187,11 +185,11 @@
                 ctx.drawImage(uploadedImage, x, (canvas.height / 2) - (imgH / 2), imgW, imgH);
             }
 
-            // 3. テキスト描画設定
+            // 3. テキスト
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.font = `bold ${fontSize}px ${font}`; // ★常に太字
-            ctx.lineJoin = "round"; // 縁取りの角を丸くする（綺麗に見える）
+            ctx.font = `bold ${fontSize}px ${font}`;
+            // ctx.lineJoin = "round";  <-- これを削除しました（角ばらせるため）
             ctx.miterLimit = 2;
 
             const startY = (canvas.height / 2) - ((3 * lHeight) / 2);
@@ -199,29 +197,24 @@
             for (let i = 0; i < 4; i++) {
                 const text = document.getElementById(`line${i+1}`).value;
                 const yPos = startY + (i * lHeight);
-
-                // 色の決定（詳細拡張か共通設定か）
                 const textColor = isAdvanced ? document.getElementById(`color${i+1}`).value : document.getElementById('globalTextColor').value;
                 const strokeColor = isAdvanced ? document.getElementById(`stroke${i+1}`).value : document.getElementById('globalTextStrokeColor').value;
 
-                // 影（ドロップシャドウ）
                 ctx.shadowColor = "rgba(0,0,0,0.5)";
                 ctx.shadowBlur = 15;
 
-                // 文字の縁取り
                 if (textStrokeWidth > 0) {
                     ctx.strokeStyle = strokeColor;
                     ctx.lineWidth = textStrokeWidth;
                     ctx.strokeText(text, canvas.width / 2, yPos);
                 }
 
-                // 文字本体
-                ctx.shadowColor = "transparent"; // 重なるので本体描画時は影を消す
+                ctx.shadowColor = "transparent";
                 ctx.fillStyle = textColor;
                 ctx.fillText(text, canvas.width / 2, yPos);
             }
 
-            // 4. 全体の外枠描画
+            // 4. 外枠
             if (borderWidth > 0) {
                 ctx.strokeStyle = borderColor;
                 ctx.lineWidth = borderWidth;
