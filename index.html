@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>画像生成ツール 2026 Square-Edge Edition</title>
+    <title>画像生成ツール 2026 Multi-Line Edition</title>
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #1a1a1c; color: #e0e0e0; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
         .controls { background: #2c2c2e; padding: 20px; border-radius: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-width: 1100px; width: 95%; border: 1px solid #3a3a3c; }
@@ -18,6 +18,7 @@
         hr { grid-column: 1 / -1; width: 100%; border: 0; border-top: 1px solid #444; margin: 5px 0; }
         .line-config { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; align-items: center; margin-bottom: 5px; }
         .advanced-only { display: none; }
+        #line4-row { display: grid; } /* 初期表示用 */
     </style>
 </head>
 <body>
@@ -28,6 +29,13 @@
         <div class="control-group">
             <label>背景色</label>
             <input type="color" id="bgColor" value="#BEBEE6">
+        </div>
+        <div class="control-group">
+            <label>行数切り替え</label>
+            <select id="lineCount">
+                <option value="4" selected>4行モード</option>
+                <option value="3">3行モード</option>
+            </select>
         </div>
         <div class="control-group">
             <label>画像配置</label>
@@ -58,7 +66,7 @@
         <div class="control-group">
             <label>フォント</label>
             <select id="fontFamily">
-                <option value="'Courier New', monospace">等幅</option>
+                <option value="'Courier New', monospace">等幅（マイクラ風）</option>
                 <option value="sans-serif">和文ゴシック</option>
                 <option value="serif">和文明朝</option>
             </select>
@@ -94,27 +102,27 @@
 
         <div style="grid-column: 1 / -1;">
             <div class="line-config">
-                <label>テキスト内容 (4行固定)</label>
+                <label>テキスト内容</label>
                 <label class="advanced-only">文字色</label>
                 <label class="advanced-only">縁色</label>
             </div>
             
-            <div class="line-config">
+            <div class="line-config" id="line1-row">
                 <input type="text" id="line1" value="タイトル">
                 <input type="color" id="color1" value="#FFFFFF" class="advanced-only">
                 <input type="color" id="stroke1" value="#464678" class="advanced-only">
             </div>
-            <div class="line-config">
+            <div class="line-config" id="line2-row">
                 <input type="text" id="line2" value="2026年 1月">
                 <input type="color" id="color2" value="#FFFFFF" class="advanced-only">
                 <input type="color" id="stroke2" value="#464678" class="advanced-only">
             </div>
-            <div class="line-config">
+            <div class="line-config" id="line3-row">
                 <input type="text" id="line3" value="内容">
                 <input type="color" id="color3" value="#FFFFFF" class="advanced-only">
                 <input type="color" id="stroke3" value="#464678" class="advanced-only">
             </div>
-            <div class="line-config">
+            <div class="line-config" id="line4-row">
                 <input type="text" id="line4" value="内容">
                 <input type="color" id="color4" value="#FFFFFF" class="advanced-only">
                 <input type="color" id="stroke4" value="#464678" class="advanced-only">
@@ -136,11 +144,18 @@
 
         allInputs.forEach(input => {
             input.addEventListener('input', () => {
+                // 詳細拡張の切り替え
                 if (input.id === 'advancedToggle') {
                     const isAdv = input.checked;
                     document.querySelectorAll('.advanced-only').forEach(el => el.style.display = isAdv ? 'block' : 'none');
                     document.querySelectorAll('.standard-ui').forEach(el => el.style.display = isAdv ? 'none' : 'block');
                 }
+                // 行数切り替え時のUI制御
+                if (input.id === 'lineCount') {
+                    const count = parseInt(input.value);
+                    document.getElementById('line4-row').style.display = (count === 4) ? 'grid' : 'none';
+                }
+                
                 const valDisp = document.getElementById(input.id + 'Val');
                 if (valDisp) valDisp.innerText = input.value;
                 draw();
@@ -169,6 +184,7 @@
             const lHeight = parseInt(document.getElementById('lineHeight').value);
             const textStrokeWidth = parseInt(document.getElementById('textStrokeWidth').value);
             const align = document.getElementById('imageAlign').value;
+            const lineCount = parseInt(document.getElementById('lineCount').value);
 
             // 1. 背景
             ctx.fillStyle = bgColor;
@@ -185,39 +201,37 @@
                 ctx.drawImage(uploadedImage, x, (canvas.height / 2) - (imgH / 2), imgW, imgH);
             }
 
-            // 3. テキスト描画設定 (★角を尖らせる設定)
+            // 3. テキスト描画設定 (角ばらせる設定)
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.font = `bold ${fontSize}px ${font}`;
-            ctx.lineJoin = "miter"; // 角を尖らせる
-            ctx.miterLimit = 2;     // トゲが出過ぎるのを防止
+            ctx.lineJoin = "miter"; 
+            ctx.miterLimit = 2;
 
-            const startY = (canvas.height / 2) - ((3 * lHeight) / 2);
+            // 選択された行数に合わせて中央位置を計算
+            const startY = (canvas.height / 2) - (((lineCount - 1) * lHeight) / 2);
 
-            for (let i = 0; i < 4; i++) {
+            for (let i = 0; i < lineCount; i++) {
                 const text = document.getElementById(`line${i+1}`).value;
                 const yPos = startY + (i * lHeight);
                 const textColor = isAdvanced ? document.getElementById(`color${i+1}`).value : document.getElementById('globalTextColor').value;
                 const strokeColor = isAdvanced ? document.getElementById(`stroke${i+1}`).value : document.getElementById('globalTextStrokeColor').value;
 
-                // 影
                 ctx.shadowColor = "rgba(0,0,0,0.5)";
                 ctx.shadowBlur = 15;
 
-                // 文字の縁取り
                 if (textStrokeWidth > 0) {
                     ctx.strokeStyle = strokeColor;
                     ctx.lineWidth = textStrokeWidth;
                     ctx.strokeText(text, canvas.width / 2, yPos);
                 }
 
-                // 文字本体
                 ctx.shadowColor = "transparent";
                 ctx.fillStyle = textColor;
                 ctx.fillText(text, canvas.width / 2, yPos);
             }
 
-            // 4. 外枠 (40px Default)
+            // 4. 全体の外枠
             if (borderWidth > 0) {
                 ctx.shadowColor = "transparent";
                 ctx.strokeStyle = borderColor;
@@ -229,7 +243,7 @@
 
         document.getElementById('saveBtn').addEventListener('click', () => {
             const link = document.createElement('a');
-            link.download = `generated_image_${Date.now()}.png`;
+            link.download = `img_gen_${Date.now()}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
         });
