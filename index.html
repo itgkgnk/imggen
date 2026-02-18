@@ -3,143 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>画像生成ツール 2026 Template Edition</title>
+    <title>画像生成ツール 2026 Side-by-Side</title>
     <style>
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #1a1a1c; color: #e0e0e0; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
-        .controls { background: #2c2c2e; padding: 20px; border-radius: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-width: 1100px; width: 95%; border: 1px solid #3a3a3c; }
+        :root {
+            --bg-color: #1a1a1c;
+            --panel-color: #2c2c2e;
+            --accent-color: #0a84ff;
+            --save-color: #30d158;
+            --border-color: #3a3a3c;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-color);
+            color: #e0e0e0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ヘッダー */
+        header {
+            padding: 10px 20px;
+            background: var(--panel-color);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h2 { margin: 0; font-size: 18px; }
+
+        /* メインコンテンツ（左右分割） */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* 左側：プレビューエリア */
+        .preview-section {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #111;
+            padding: 20px;
+            overflow: auto;
+        }
+
+        canvas {
+            max-width: 100%;
+            max-height: 100%;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            background: #000;
+        }
+
+        /* 右側：コントロールエリア */
+        .controls-section {
+            width: 400px;
+            background: var(--panel-color);
+            border-left: 1px solid var(--border-color);
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
         .control-group { display: flex; flex-direction: column; gap: 5px; }
-        label { font-size: 11px; color: #0a84ff; text-transform: uppercase; font-weight: bold; }
-        canvas { border: none; max-width: 100%; height: auto; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-        input, select, button { padding: 10px; border-radius: 6px; border: 1px solid #3a3a3c; background: #1c1c1e; color: white; font-size: 13px; }
+        label { font-size: 11px; color: var(--accent-color); text-transform: uppercase; font-weight: bold; }
+        
+        input, select, button { 
+            padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); 
+            background: #1c1c1e; color: white; font-size: 13px; 
+        }
+
         input[type="range"] { padding: 0; }
-        .toggle-area { grid-column: 1 / -1; background: #3a3a3c; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; cursor: pointer; border: 1px solid #444; }
-        .save-btn { grid-column: 1 / -1; background: #30d158; font-size: 18px; margin-top: 10px; padding: 15px; border: none; font-weight: bold; cursor: pointer; color: white; }
-        .template-area { grid-column: 1 / -1; background: #252526; padding: 15px; border-radius: 8px; border: 1px dashed #555; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-        .template-btn { background: #555; padding: 5px 15px; font-size: 12px; }
-        .template-btn:hover { background: #777; }
-        .export-btn { background: #007aff; }
-        hr { grid-column: 1 / -1; width: 100%; border: 0; border-top: 1px solid #444; margin: 5px 0; }
-        .line-config { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; align-items: center; margin-bottom: 5px; }
+
+        .template-area { 
+            background: #252526; padding: 12px; border-radius: 8px; 
+            border: 1px dashed #555; display: flex; flex-wrap: wrap; gap: 8px; 
+        }
+
+        .template-btn { flex: 1; min-width: 100px; font-size: 11px; background: #444; cursor: pointer; border: none; }
+        .template-btn:hover { background: #555; }
+
+        .save-btn { 
+            background: var(--save-color); font-size: 16px; padding: 15px; 
+            border: none; font-weight: bold; cursor: pointer; color: white; margin-top: 10px;
+        }
+
+        .toggle-area { 
+            background: #3a3a3c; padding: 10px; border-radius: 8px; 
+            display: flex; align-items: center; gap: 10px; cursor: pointer; 
+        }
+
+        hr { border: 0; border-top: 1px solid #444; margin: 10px 0; }
+
+        .line-config { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 5px; margin-bottom: 5px; }
         .advanced-only { display: none; }
+
+        /* スマホ対応（上下レイアウトに戻す） */
+        @media (max-width: 900px) {
+            .main-container { flex-direction: column; overflow: auto; }
+            .preview-section { height: 300px; flex: none; }
+            .controls-section { width: 100%; height: auto; border-left: none; border-top: 1px solid var(--border-color); }
+            body { overflow: auto; }
+        }
     </style>
 </head>
 <body>
 
-    <h2 style="margin-bottom: 20px;">画像生成ツール (1920x1080)</h2>
+    <header>
+        <h2>画像生成ツール 2026 (1920x1080)</h2>
+        <div id="status" style="font-size: 12px; color: #888;">Editing...</div>
+    </header>
 
-    <div class="controls">
-        <div class="template-area">
-            <label style="width:100%; margin-bottom:5px;">テンプレート管理:</label>
-            <button class="template-btn" onclick="saveToBrowser()">現在の設定をブラウザに保存</button>
-            <button class="template-btn" onclick="loadFromBrowser()">保存した設定を読込</button>
-            <button class="template-btn export-btn" onclick="exportConfig()">設定をファイルで記録 (.json)</button>
-            <input type="file" id="importFile" accept=".json" style="display:none" onchange="importConfig(event)">
-            <button class="template-btn export-btn" onclick="document.getElementById('importFile').click()">記録ファイルを読込</button>
+    <div class="main-container">
+        <div class="preview-section">
+            <canvas id="mainCanvas" width="1920" height="1080"></canvas>
         </div>
 
-        <hr>
-
-        <div class="control-group">
-            <label>背景色</label>
-            <input type="color" id="bgColor" value="#BEBEE6">
-        </div>
-        <div class="control-group">
-            <label>行数切り替え</label>
-            <select id="lineCount">
-                <option value="4" selected>4行モード</option>
-                <option value="3">3行モード</option>
-            </select>
-        </div>
-        <div class="control-group">
-            <label>画像配置</label>
-            <input type="file" id="imageUpload" accept="image/*">
-        </div>
-        <div class="control-group">
-            <label>画像の位置</label>
-            <select id="imageAlign">
-                <option value="center">中央</option>
-                <option value="left">左側</option>
-                <option value="right">右側</option>
-            </select>
-        </div>
-
-        <hr>
-
-        <div class="control-group">
-            <label>全体枠の色</label>
-            <input type="color" id="borderColor" value="#464678">
-        </div>
-        <div class="control-group">
-            <label>全体枠の太さ: <span id="borderWidthVal">40</span>px</label>
-            <input type="range" id="borderWidth" min="0" max="150" value="40">
-        </div>
-
-        <hr>
-
-        <div class="control-group">
-            <label>フォント</label>
-            <select id="fontFamily">
-                <option value="'Courier New', monospace">等幅（マイクラ風）</option>
-                <option value="sans-serif">和文ゴシック</option>
-                <option value="serif">和文明朝</option>
-            </select>
-        </div>
-        <div class="control-group">
-            <label>サイズ: <span id="fontSizeVal">200</span>px</label>
-            <input type="range" id="fontSize" min="20" max="500" value="200">
-        </div>
-        <div class="control-group">
-            <label>行高: <span id="lineHeightVal">230</span>px</label>
-            <input type="range" id="lineHeight" min="50" max="600" value="230">
-        </div>
-        <div class="control-group">
-            <label>文字の縁の太さ: <span id="textStrokeWidthVal">10</span>px</label>
-            <input type="range" id="textStrokeWidth" min="0" max="50" value="10">
-        </div>
-
-        <div class="control-group standard-ui">
-            <label>文字の色</label>
-            <input type="color" id="globalTextColor" value="#FFFFFF">
-        </div>
-        <div class="control-group standard-ui">
-            <label>文字の縁色</label>
-            <input type="color" id="globalTextStrokeColor" value="#464678">
-        </div>
-
-        <hr>
-
-        <div class="toggle-area">
-            <input type="checkbox" id="advancedToggle">
-            <label for="advancedToggle" style="cursor:pointer; color: #30d158;">詳細拡張モード (個別色設定)</label>
-        </div>
-
-        <div style="grid-column: 1 / -1;">
-            <div class="line-config">
-                <input type="text" id="line1" value="タイトル">
-                <input type="color" id="color1" value="#FFFFFF" class="advanced-only">
-                <input type="color" id="stroke1" value="#464678" class="advanced-only">
+        <div class="controls-section">
+            <div class="template-area">
+                <button class="template-btn" onclick="saveToBrowser()">ブラウザ保存</button>
+                <button class="template-btn" onclick="loadFromBrowser()">ブラウザ読込</button>
+                <button class="template-btn" onclick="exportConfig()">JSON書き出し</button>
+                <button class="template-btn" onclick="document.getElementById('importFile').click()">JSON読み込み</button>
+                <input type="file" id="importFile" accept=".json" style="display:none" onchange="importConfig(event)">
             </div>
-            <div class="line-config">
-                <input type="text" id="line2" value="2026年 1月">
-                <input type="color" id="color2" value="#FFFFFF" class="advanced-only">
-                <input type="color" id="stroke2" value="#464678" class="advanced-only">
-            </div>
-            <div class="line-config">
-                <input type="text" id="line3" value="内容">
-                <input type="color" id="color3" value="#FFFFFF" class="advanced-only">
-                <input type="color" id="stroke3" value="#464678" class="advanced-only">
-            </div>
-            <div class="line-config" id="line4-row">
-                <input type="text" id="line4" value="内容">
-                <input type="color" id="color4" value="#FFFFFF" class="advanced-only">
-                <input type="color" id="stroke4" value="#464678" class="advanced-only">
-            </div>
-        </div>
 
-        <button id="saveBtn" class="save-btn">PNG画像として保存</button>
+            <div class="control-group">
+                <label>背景色</label>
+                <input type="color" id="bgColor" value="#BEBEE6">
+            </div>
+
+            <div class="control-group">
+                <label>画像配置・位置</label>
+                <input type="file" id="imageUpload" accept="image/*">
+                <select id="imageAlign">
+                    <option value="center">中央</option>
+                    <option value="left">左側</option>
+                    <option value="right">右側</option>
+                </select>
+            </div>
+
+            <hr>
+
+            <div class="control-group">
+                <label>全体枠（色・太さ: <span id="borderWidthVal">40</span>px）</label>
+                <input type="color" id="borderColor" value="#464678">
+                <input type="range" id="borderWidth" min="0" max="150" value="40">
+            </div>
+
+            <hr>
+
+            <div class="control-group">
+                <label>テキスト設定</label>
+                <select id="fontFamily">
+                    <option value="'Courier New', monospace">等幅（マイクラ風）</option>
+                    <option value="sans-serif">和文ゴシック</option>
+                    <option value="serif">和文明朝</option>
+                </select>
+                <select id="lineCount">
+                    <option value="4" selected>4行表示</option>
+                    <option value="3">3行表示</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>サイズ: <span id="fontSizeVal">200</span>px / 行高: <span id="lineHeightVal">230</span>px</label>
+                <input type="range" id="fontSize" min="20" max="500" value="200">
+                <input type="range" id="lineHeight" min="50" max="600" value="230">
+            </div>
+
+            <div class="control-group">
+                <label>文字の縁（太さ: <span id="textStrokeWidthVal">10</span>px）</label>
+                <input type="range" id="textStrokeWidth" min="0" max="50" value="10">
+                <div class="standard-ui" style="display:flex; gap:10px; margin-top:5px;">
+                    <div style="flex:1"><label>文字色</label><input type="color" id="globalTextColor" value="#FFFFFF" style="width:100%"></div>
+                    <div style="flex:1"><label>縁色</label><input type="color" id="globalTextStrokeColor" value="#464678" style="width:100%"></div>
+                </div>
+            </div>
+
+            <div class="toggle-area">
+                <input type="checkbox" id="advancedToggle">
+                <label for="advancedToggle" style="cursor:pointer; color: var(--save-color);">詳細拡張モード (個別色設定)</label>
+            </div>
+
+            <div class="control-group">
+                <label>テキスト内容</label>
+                <div class="line-config" id="line1-row">
+                    <input type="text" id="line1" value="タイトル" style="grid-column: span 1">
+                    <input type="color" id="color1" value="#FFFFFF" class="advanced-only">
+                    <input type="color" id="stroke1" value="#464678" class="advanced-only">
+                </div>
+                <div class="line-config" id="line2-row">
+                    <input type="text" id="line2" value="2026年 1月">
+                    <input type="color" id="color2" value="#FFFFFF" class="advanced-only">
+                    <input type="color" id="stroke2" value="#464678" class="advanced-only">
+                </div>
+                <div class="line-config" id="line3-row">
+                    <input type="text" id="line3" value="内容">
+                    <input type="color" id="color3" value="#FFFFFF" class="advanced-only">
+                    <input type="color" id="stroke3" value="#464678" class="advanced-only">
+                </div>
+                <div class="line-config" id="line4-row">
+                    <input type="text" id="line4" value="内容">
+                    <input type="color" id="color4" value="#FFFFFF" class="advanced-only">
+                    <input type="color" id="stroke4" value="#464678" class="advanced-only">
+                </div>
+            </div>
+
+            <button id="saveBtn" class="save-btn">PNG画像として保存</button>
+            <div style="height: 50px;"></div> </div>
     </div>
-
-    <canvas id="mainCanvas" width="1920" height="1080"></canvas>
 
     <script>
         const canvas = document.getElementById('mainCanvas');
@@ -174,12 +255,11 @@
             });
         });
 
-        // テンプレート機能：ブラウザ保存
         function saveToBrowser() {
             const config = {};
             inputIds.forEach(id => config[id] = document.getElementById(id)[id === 'advancedToggle' ? 'checked' : 'value']);
             localStorage.setItem('imggen_config', JSON.stringify(config));
-            alert("ブラウザに保存しました。次回起動時や読み込みボタンで復元できます。");
+            alert("ブラウザに保存しました。");
         }
 
         function loadFromBrowser() {
@@ -188,14 +268,13 @@
             applyConfig(JSON.parse(saved));
         }
 
-        // テンプレート機能：ファイル記録 (JSON)
         function exportConfig() {
             const config = {};
             inputIds.forEach(id => config[id] = document.getElementById(id)[id === 'advancedToggle' ? 'checked' : 'value']);
             const blob = new Blob([JSON.stringify(config, null, 2)], {type: 'application/json'});
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `template_${new Date().toLocaleDateString()}.json`;
+            a.download = `config_${Date.now()}.json`;
             a.click();
         }
 
@@ -217,7 +296,6 @@
             draw();
         }
 
-        // 画像アップロード
         document.getElementById('imageUpload').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -282,6 +360,7 @@
             }
 
             if (borderWidth > 0) {
+                ctx.shadowColor = "transparent";
                 ctx.strokeStyle = borderColor;
                 ctx.lineWidth = borderWidth;
                 const offset = borderWidth / 2;
@@ -291,7 +370,7 @@
 
         document.getElementById('saveBtn').addEventListener('click', () => {
             const link = document.createElement('a');
-            link.download = `gen_${Date.now()}.png`;
+            link.download = `output_${Date.now()}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
         });
