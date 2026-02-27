@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>画像生成ツール 2026 Ultimate Final v9</title>
+    <title>画像生成ツール 2026 Ultimate Final v10</title>
     <style>
         :root {
             --bg-dark: #121214;
@@ -24,7 +24,6 @@
 
         .wrapper { display: flex; height: 100vh; width: 100vw; }
 
-        /* 左側：プレビューエリア */
         .preview-area {
             flex: 1; background: #000; display: flex;
             align-items: center; justify-content: center;
@@ -37,7 +36,6 @@
             background: #111;
         }
 
-        /* 右側：操作パネル */
         .editor-panel {
             width: 540px; background: var(--panel-bg);
             border-left: 1px solid var(--border);
@@ -78,7 +76,19 @@
             background: #1c1c1e; padding: 12px; border-radius: 8px;
             border: 1px solid #333; margin-bottom: 8px;
         }
-        .line-adv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+
+        /* アコーディオン・トグル関連 */
+        .collapsible-trigger {
+            display: flex; align-items: center; justify-content: center;
+            width: 100%; padding: 5px; margin-top: 8px; font-size: 10px;
+            background: #252526; border: 1px solid #444; color: #888;
+            cursor: pointer; border-radius: 4px; transition: 0.2s;
+        }
+        .collapsible-trigger:hover { background: #333; color: #fff; }
+        .collapsible-content { display: none; margin-top: 10px; }
+        .collapsible-content.active { display: block; }
+
+        .line-adv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .line-adv-grid > div { display: flex; flex-direction: column; gap: 4px; }
         .full-row { grid-column: span 2; }
 
@@ -127,7 +137,38 @@
             <div class="editor-content">
                 <header><h2>画像生成ツール (1920x1080)</h2></header>
 
-                <!-- 1. テンプレート管理 -->
+                <!-- 1. 全体レイアウト設定（一番上に移動） -->
+                <div class="section">
+                    <div class="section-title">📐 全体レイアウト設定</div>
+                    <div class="group">
+                        <label>基本フォント</label>
+                        <div style="display:flex; gap:5px;">
+                            <select id="fontFamily" class="font-sel" style="flex:1;">
+                                <option value="sans-serif">和文ゴシック</option>
+                                <option value="serif">和文明朝</option>
+                                <option value="'Courier New', monospace">等幅（デフォルト）</option>
+                            </select>
+                            <button class="btn-blue" onclick="loadSystemFonts()">PCフォント読込</button>
+                        </div>
+                        <button class="btn-blue" style="margin-top:8px; background:#555;" onclick="overwriteDetailedFonts()">詳細設定のフォントを全体設定で上書き</button>
+                    </div>
+                    <div class="row">
+                        <div class="group"><label>共通位置揃え</label><select id="textAlignment"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div>
+                        <div class="group"><label>表示行数</label><select id="lineCount"><option value="4" selected>4行表示</option><option value="3">3行表示</option></select></div>
+                    </div>
+                    <div class="group standard-ui">
+                        <div class="row">
+                            <div class="group"><label>共通サイズ</label><div class="sync-row"><input type="range" id="fontSize" min="20" max="500" value="200"><input type="number" id="fontSizeN" class="num-in" value="200"></div></div>
+                            <div class="group"><label>共通行高</label><div class="sync-row"><input type="range" id="lineHeight" min="50" max="600" value="230"><input type="number" id="lineHeightNum" class="num-in" value="230"></div></div>
+                        </div>
+                    </div>
+                    <div class="group">
+                        <label>文字縁の太さ: <span id="textStrokeWidthDisp">10</span>px</label>
+                        <div class="sync-row"><input type="range" id="textStrokeWidth" min="0" max="50" value="10"><input type="number" id="textStrokeWidthN" class="num-in" value="10"></div>
+                    </div>
+                </div>
+
+                <!-- 2. テンプレート管理 -->
                 <div class="section">
                     <div class="section-title">📁 テンプレート管理</div>
                     <div class="group">
@@ -137,29 +178,75 @@
                     <div class="template-list" id="tplList"></div>
                 </div>
 
-                <!-- 2. テキスト設定（固定4行） -->
+                <!-- 3. テキスト設定（固定4行） -->
                 <div class="section">
                     <div class="section-title">✍️ テキスト内容・行別設定</div>
                     <div id="line-container">
                         <div class="line-box" id="box1">
                             <input type="text" id="line1" value="タイトル" style="width:100%; box-sizing:border-box; font-size: 16px;">
-                            <div class="line-adv-grid adv-ui">
-                                <div><label>フォント</label><select id="fFam1" class="font-sel"></select></div>
-                                <div><label>サイズ</label><select id="fSize1"></select></div>
-                                <div><label>配置</label><select id="lAln1"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div>
-                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;">
-                                    <div><label>文字色</label><input type="color" id="color1" value="#FFFFFF"></div>
-                                    <div><label>縁色</label><input type="color" id="stroke1" value="#464678"></div>
-                                </div>
-                                <div class="full-row">
-                                    <label>次の行までの高さ: <span id="lH1Disp">230</span>px</label>
-                                    <div class="sync-row"><input type="range" id="lH1" min="50" max="600" value="230"><input type="number" id="lH1N" class="num-in" value="230"></div>
+                            <div class="adv-ui">
+                                <div class="collapsible-trigger" onclick="toggleCollapsible(this)">詳細設定を開く ▼</div>
+                                <div class="collapsible-content">
+                                    <div class="line-adv-grid">
+                                        <div><label>フォント</label><select id="fFam1" class="font-sel"></select></div>
+                                        <div><label>サイズ</label><select id="fSize1"></select></div>
+                                        <div><label>配置</label><select id="lAln1"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div>
+                                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;">
+                                            <div><label>文字色</label><input type="color" id="color1" value="#FFFFFF"></div>
+                                            <div><label>縁色</label><input type="color" id="stroke1" value="#464678"></div>
+                                        </div>
+                                        <div class="full-row">
+                                            <label>次の行までの高さ: <span id="lH1Disp">230</span>px</label>
+                                            <div class="sync-row"><input type="range" id="lH1" min="50" max="600" value="230"><input type="number" id="lH1N" class="num-in" value="230"></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="line-box" id="box2"><input type="text" id="line2" value="サブタイトル" style="width:100%; box-sizing:border-box;"><div class="line-adv-grid adv-ui"><div><label>フォント</label><select id="fFam2" class="font-sel"></select></div><div><label>サイズ</label><select id="fSize2"></select></div><div><label>配置</label><select id="lAln2"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;"><div><input type="color" id="color2" value="#FFFFFF"></div><div><input type="color" id="stroke2" value="#464678"></div></div><div class="full-row"><div class="sync-row"><input type="range" id="lH2" min="50" max="600" value="230"><input type="number" id="lH2N" class="num-in" value="230"></div></div></div></div>
-                        <div class="line-box" id="box3"><input type="text" id="line3" value="内容1" style="width:100%; box-sizing:border-box;"><div class="line-adv-grid adv-ui"><div><label>フォント</label><select id="fFam3" class="font-sel"></select></div><div><label>サイズ</label><select id="fSize3"></select></div><div><label>配置</label><select id="lAln3"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;"><div><input type="color" id="color3" value="#FFFFFF"></div><div><input type="color" id="stroke3" value="#464678"></div></div><div class="full-row"><div class="sync-row"><input type="range" id="lH3" min="50" max="600" value="230"><input type="number" id="lH3N" class="num-in" value="230"></div></div></div></div>
-                        <div class="line-box" id="box4"><input type="text" id="line4" value="内容2" style="width:100%; box-sizing:border-box;"><div class="line-adv-grid adv-ui"><div><label>フォント</label><select id="fFam4" class="font-sel"></select></div><div><label>サイズ</label><select id="fSize4"></select></div><div><label>配置</label><select id="lAln4"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;"><div><input type="color" id="color4" value="#FFFFFF"></div><div><input type="color" id="stroke4" value="#464678"></div></div></div></div>
+                        <div class="line-box" id="box2">
+                            <input type="text" id="line2" value="サブタイトル" style="width:100%; box-sizing:border-box;">
+                            <div class="adv-ui">
+                                <div class="collapsible-trigger" onclick="toggleCollapsible(this)">詳細設定を開く ▼</div>
+                                <div class="collapsible-content">
+                                    <div class="line-adv-grid">
+                                        <div><label>フォント</label><select id="fFam2" class="font-sel"></select></div>
+                                        <div><label>サイズ</label><select id="fSize2"></select></div>
+                                        <div><label>配置</label><select id="lAln2"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div>
+                                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;"><div><input type="color" id="color2" value="#FFFFFF"></div><div><input type="color" id="stroke2" value="#464678"></div></div>
+                                        <div class="full-row"><div class="sync-row"><input type="range" id="lH2" min="50" max="600" value="230"><input type="number" id="lH2N" class="num-in" value="230"></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="line-box" id="box3">
+                            <input type="text" id="line3" value="内容1" style="width:100%; box-sizing:border-box;">
+                            <div class="adv-ui">
+                                <div class="collapsible-trigger" onclick="toggleCollapsible(this)">詳細設定を開く ▼</div>
+                                <div class="collapsible-content">
+                                    <div class="line-adv-grid">
+                                        <div><label>フォント</label><select id="fFam3" class="font-sel"></select></div>
+                                        <div><label>サイズ</label><select id="fSize3"></select></div>
+                                        <div><label>配置</label><select id="lAln3"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div>
+                                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;"><div><input type="color" id="color3" value="#FFFFFF"></div><div><input type="color" id="stroke3" value="#464678"></div></div>
+                                        <div class="full-row"><div class="sync-row"><input type="range" id="lH3" min="50" max="600" value="230"><input type="number" id="lH3N" class="num-in" value="230"></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="line-box" id="box4">
+                            <input type="text" id="line4" value="内容2" style="width:100%; box-sizing:border-box;">
+                            <div class="adv-ui">
+                                <div class="collapsible-trigger" onclick="toggleCollapsible(this)">詳細設定を開く ▼</div>
+                                <div class="collapsible-content">
+                                    <div class="line-adv-grid">
+                                        <div><label>フォント</label><select id="fFam4" class="font-sel"></select></div>
+                                        <div><label>サイズ</label><select id="fSize4"></select></div>
+                                        <div><label>配置</label><select id="lAln4"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div>
+                                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;"><div><input type="color" id="color4" value="#FFFFFF"></div><div><input type="color" id="stroke4" value="#464678"></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="group" style="background:#333; padding:12px; border-radius:10px; display:flex; align-items:center; gap:10px; cursor:pointer; border:1px solid #444;">
                         <input type="checkbox" id="advancedToggle">
@@ -167,7 +254,7 @@
                     </div>
                 </div>
 
-                <!-- 3. カラー設定 -->
+                <!-- 4. カラー設定 -->
                 <div class="section">
                     <div class="section-title">🎨 カラー・フレーム設定</div>
                     <div class="group standard-ui">
@@ -186,7 +273,7 @@
                     </div>
                 </div>
 
-                <!-- 4. 画像管理 -->
+                <!-- 5. 画像管理 -->
                 <div class="section">
                     <div class="section-title">🖼️ 画像管理 (☰部分で順序変更)</div>
                     <div class="group">
@@ -196,43 +283,11 @@
                     <div id="image-controls-container"></div>
                 </div>
 
-                <!-- ★新機能 5. フリー文字管理 -->
+                <!-- 6. フリー文字管理 -->
                 <div class="section">
                     <div class="section-title">💬 フリー文字管理 (自由配置テキスト)</div>
                     <button class="btn-green" onclick="addFreeText()">+ 文字レイヤーを追加</button>
                     <div id="free-text-container"></div>
-                </div>
-
-                <!-- 6. 全体レイアウト -->
-                <div class="section">
-                    <div class="section-title">📐 全体レイアウト設定</div>
-                    <div class="group">
-                        <label>基本フォント</label>
-                        <div style="display:flex; gap:5px;">
-                            <select id="fontFamily" class="font-sel" style="flex:1;">
-                                <option value="sans-serif">和文ゴシック</option>
-                                <option value="serif">和文明朝</option>
-                                <option value="'Courier New', monospace">等幅（デフォルト）</option>
-                            </select>
-                            <button class="btn-blue" onclick="loadSystemFonts()">PCフォント読込</button>
-                        </div>
-                        <!-- ★追加：詳細フォント上書きボタン -->
-                        <button class="btn-blue" style="margin-top:8px; background:#555;" onclick="overwriteDetailedFonts()">詳細設定のフォントを全体設定で上書き</button>
-                    </div>
-                    <div class="row">
-                        <div class="group"><label>共通位置揃え</label><select id="textAlignment"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div>
-                        <div class="group"><label>表示行数</label><select id="lineCount"><option value="4" selected>4行表示</option><option value="3">3行表示</option></select></div>
-                    </div>
-                    <div class="group standard-ui">
-                        <div class="row">
-                            <div class="group"><label>共通サイズ</label><div class="sync-row"><input type="range" id="fontSize" min="20" max="500" value="200"><input type="number" id="fontSizeN" class="num-in" value="200"></div></div>
-                            <div class="group"><label>共通行高</label><div class="sync-row"><input type="range" id="lineHeight" min="50" max="600" value="230"><input type="number" id="lineHeightNum" class="num-in" value="230"></div></div>
-                        </div>
-                    </div>
-                    <div class="group">
-                        <label>文字縁の太さ: <span id="textStrokeWidthDisp">10</span>px</label>
-                        <div class="sync-row"><input type="range" id="textStrokeWidth" min="0" max="50" value="10"><input type="number" id="textStrokeWidthN" class="num-in" value="10"></div>
-                    </div>
                 </div>
 
                 <button id="saveBtn" class="save-btn">PNG画像として保存</button>
@@ -255,8 +310,15 @@
         ];
 
         let uploadedImages = [];
-        let freeTexts = []; // { text, x, y, size, font, color, sColor, sWidth, align, id }
+        let freeTexts = []; 
         const sizeOptions = [50, 80, 100, 120, 150, 180, 200, 250, 300, 350, 400, 500];
+
+        // 共通機能：トグル開閉
+        function toggleCollapsible(el) {
+            const content = el.nextElementSibling;
+            content.classList.toggle('active');
+            el.innerText = content.classList.contains('active') ? "詳細設定を閉じる ▲" : "詳細設定を開く ▼";
+        }
 
         // 1. 同期関数
         function setupSync(rangeId, numId, dispId) {
@@ -287,7 +349,7 @@
             if(!el) return;
             el.addEventListener('input', () => {
                 if (id === 'advancedToggle') {
-                    document.querySelectorAll('.adv-ui').forEach(e => e.style.display = el.checked ? 'grid' : 'none');
+                    document.querySelectorAll('.adv-ui').forEach(e => e.style.display = el.checked ? 'block' : 'none');
                     document.querySelectorAll('.standard-ui').forEach(e => e.style.display = el.checked ? 'none' : 'flex');
                 }
                 if (id === 'lineCount') document.getElementById('box4').style.display = (el.value === "4") ? 'block' : 'none';
@@ -376,22 +438,26 @@
                 box.className = 'text-layer-box';
                 box.innerHTML = `
                     <div class="handle" draggable="true">☰ 文字レイヤー ${idx + 1} (順序変更)</div>
-                    <textarea style="width:100%; height:40px; box-sizing:border-box; margin-bottom:10px;" oninput="updateFreeText(${idx}, 'text', this.value)">${data.text}</textarea>
-                    <div class="line-adv-grid">
-                        <div><label>フォント</label><select onchange="updateFreeText(${idx}, 'font', this.value)">${fontsHTML}</select></div>
-                        <div><label>配置</label><select onchange="updateFreeText(${idx}, 'align', this.value)"><option value="center" ${data.align==='center'?'selected':''}>中央</option><option value="left" ${data.align==='left'?'selected':''}>左寄</option><option value="right" ${data.align==='right'?'selected':''}>右寄</option></select></div>
-                        <div><label>文字色</label><input type="color" value="${data.color}" oninput="updateFreeText(${idx}, 'color', this.value)"></div>
-                        <div><label>縁色</label><input type="color" value="${data.sColor}" oninput="updateFreeText(${idx}, 'sColor', this.value)"></div>
-                        <div class="full-row"><label>サイズ / 縁太さ</label>
-                            <div class="sync-row"><input type="range" min="10" max="500" value="${data.size}" oninput="updateFreeText(${idx}, 'size', this.value)"><input type="number" class="num-in" value="${data.size}" oninput="updateFreeText(${idx}, 'size', this.value)"></div>
-                            <div class="sync-row" style="margin-top:5px;"><input type="range" min="0" max="50" value="${data.sWidth}" oninput="updateFreeText(${idx}, 'sWidth', this.value)"><input type="number" class="num-in" value="${data.sWidth}" oninput="updateFreeText(${idx}, 'sWidth', this.value)"></div>
+                    <textarea style="width:100%; height:40px; box-sizing:border-box;" oninput="updateFreeText(${idx}, 'text', this.value)">${data.text}</textarea>
+                    
+                    <div class="collapsible-trigger" onclick="toggleCollapsible(this)">詳細設定を開く ▼</div>
+                    <div class="collapsible-content">
+                        <div class="line-adv-grid">
+                            <div><label>フォント</label><select onchange="updateFreeText(${idx}, 'font', this.value)">${fontsHTML}</select></div>
+                            <div><label>配置</label><select onchange="updateFreeText(${idx}, 'align', this.value)"><option value="center" ${data.align==='center'?'selected':''}>中央</option><option value="left" ${data.align==='left'?'selected':''}>左寄</option><option value="right" ${data.align==='right'?'selected':''}>右寄</option></select></div>
+                            <div><label>文字色</label><input type="color" value="${data.color}" oninput="updateFreeText(${idx}, 'color', this.value)"></div>
+                            <div><label>縁色</label><input type="color" value="${data.sColor}" oninput="updateFreeText(${idx}, 'sColor', this.value)"></div>
+                            <div class="full-row"><label>サイズ / 縁太さ</label>
+                                <div class="sync-row"><input type="range" min="10" max="500" value="${data.size}" oninput="updateFreeText(${idx}, 'size', this.value)"><input type="number" class="num-in" value="${data.size}" oninput="updateFreeText(${idx}, 'size', this.value)"></div>
+                                <div class="sync-row" style="margin-top:5px;"><input type="range" min="0" max="50" value="${data.sWidth}" oninput="updateFreeText(${idx}, 'sWidth', this.value)"><input type="number" class="num-in" value="${data.sWidth}" oninput="updateFreeText(${idx}, 'sWidth', this.value)"></div>
+                            </div>
+                            <div class="full-row"><label>位置 X / Y</label>
+                                <div class="sync-row"><input type="range" min="0" max="1920" value="${data.x}" oninput="updateFreeText(${idx}, 'x', this.value)"><input type="number" class="num-in" value="${data.x}" oninput="updateFreeText(${idx}, 'x', this.value)"></div>
+                                <div class="sync-row" style="margin-top:5px;"><input type="range" min="0" max="1080" value="${data.y}" oninput="updateFreeText(${idx}, 'y', this.value)"><input type="number" class="num-in" value="${data.y}" oninput="updateFreeText(${idx}, 'y', this.value)"></div>
+                            </div>
                         </div>
-                        <div class="full-row"><label>位置 X / Y</label>
-                            <div class="sync-row"><input type="range" min="0" max="1920" value="${data.x}" oninput="updateFreeText(${idx}, 'x', this.value)"><input type="number" class="num-in" value="${data.x}" oninput="updateFreeText(${idx}, 'x', this.value)"></div>
-                            <div class="sync-row" style="margin-top:5px;"><input type="range" min="0" max="1080" value="${data.y}" oninput="updateFreeText(${idx}, 'y', this.value)"><input type="number" class="num-in" value="${data.y}" oninput="updateFreeText(${idx}, 'y', this.value)"></div>
-                        </div>
+                        <button class="btn-danger" style="width:100%; margin-top:10px;" onclick="removeFreeText(${idx})">このテキストを削除</button>
                     </div>
-                    <button class="btn-danger" style="width:100%; margin-top:10px;" onclick="removeFreeText(${idx})">このテキストを削除</button>
                 `;
                 box.querySelectorAll('input, select, textarea, button').forEach(el => { el.onmousedown = (e) => e.stopPropagation(); el.ontouchstart = (e) => e.stopPropagation(); });
                 const h = box.querySelector('.handle');
@@ -421,7 +487,7 @@
                 const selectors = document.querySelectorAll('.font-sel');
                 const exist = new Set();
                 fonts.forEach(f => { if(!exist.has(f.family)) { selectors.forEach(s => s.add(new Option(f.family, `"${f.family}"`))); exist.add(f.family); } });
-                renderFreeTexts(); // フリー文字側のセレクトボックスも更新
+                renderFreeTexts(); 
                 alert("PC内のフォントを読み込みました。");
             } catch (err) { console.error(err); }
         }
@@ -436,7 +502,7 @@
 
         function storeTemplate() {
             const name = document.getElementById('tplName').value.trim();
-            if(!name) return alert("名前を入力してください。");
+            if(!name) return alert("テンプレート名を入力してください。");
             const config = { 
                 controls: {}, 
                 images: uploadedImages.map(it => ({ x: it.x, y: it.y, scale: it.scale, src: it.src })),
@@ -487,7 +553,6 @@
             ctx.fillStyle = document.getElementById('bgColor').value;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 1. 画像レイヤー
             uploadedImages.forEach(item => {
                 const base = Math.min(canvas.width / item.img.width, canvas.height / item.img.height);
                 const f = base * (item.scale / 100);
@@ -495,7 +560,6 @@
                 ctx.drawImage(item.img, item.x - (w/2), item.y - (h/2), w, h);
             });
 
-            // 2. フリー文字レイヤー
             ctx.lineJoin = "miter"; ctx.miterLimit = 2; ctx.textBaseline = "middle";
             freeTexts.forEach(t => {
                 ctx.textAlign = t.align;
@@ -506,7 +570,6 @@
                 ctx.fillText(t.text, t.x, t.y);
             });
 
-            // 3. 固定テキスト（4行）
             const lineCount = parseInt(document.getElementById('lineCount').value);
             const globalH = parseInt(document.getElementById('lineHeight').value);
             const globalAlign = document.getElementById('textAlignment').value;
@@ -536,7 +599,6 @@
                 if (i < lineCount - 1) currY += hList[i];
             }
 
-            // 4. 外枠
             const bW = parseInt(document.getElementById('borderWidth').value);
             if (bW > 0) { ctx.strokeStyle = document.getElementById('borderColor').value; ctx.lineWidth = bW; ctx.strokeRect(bW/2, bW/2, canvas.width - bW, canvas.height - bW); }
         }
