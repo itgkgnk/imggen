@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>画像生成ツール 2026 Ultimate Final v8</title>
+    <title>画像生成ツール 2026 Ultimate Final v9</title>
     <style>
         :root {
             --bg-dark: #121214;
@@ -24,7 +24,7 @@
 
         .wrapper { display: flex; height: 100vh; width: 100vw; }
 
-        /* 左側：プレビューエリア（固定表示） */
+        /* 左側：プレビューエリア */
         .preview-area {
             flex: 1; background: #000; display: flex;
             align-items: center; justify-content: center;
@@ -37,16 +37,15 @@
             background: #111;
         }
 
-        /* 右側：操作パネル（スクロール可能） */
+        /* 右側：操作パネル */
         .editor-panel {
-            width: 520px; background: var(--panel-bg);
+            width: 540px; background: var(--panel-bg);
             border-left: 1px solid var(--border);
             display: flex; flex-direction: column; overflow-y: auto;
         }
 
         .editor-content { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
 
-        /* セクションデザイン */
         .section {
             background: var(--section-bg); padding: 15px;
             border-radius: 12px; border: 1px solid var(--border);
@@ -57,10 +56,8 @@
             text-transform: uppercase; margin-bottom: 5px; display: flex; align-items: center; gap: 5px;
         }
 
-        /* フォーム部品 */
         label { font-size: 10px; font-weight: bold; color: #aaa; }
         
-        /* カラーピッカーが正しく表示されるように修正 */
         input[type="color"] {
             width: 100%; height: 40px; padding: 0; border: 1px solid var(--border);
             border-radius: 6px; background: none; cursor: pointer; -webkit-appearance: none;
@@ -68,18 +65,16 @@
         input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
         input[type="color"]::-webkit-color-swatch { border: none; border-radius: 6px; }
 
-        input[type="text"], input[type="number"], select, button {
+        input[type="text"], input[type="number"], select, button, textarea {
             background: #2c2c2e; border: 1px solid var(--border);
             color: #fff; padding: 10px; border-radius: 6px; font-size: 13px;
         }
 
-        /* スライダーと数値入力の同期用 */
         .sync-row { display: flex; align-items: center; gap: 10px; width: 100%; }
         .num-in { width: 80px; text-align: center; }
         .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-        /* 行ごとの設定ボックス */
-        .line-box {
+        .line-box, .img-box, .text-layer-box {
             background: #1c1c1e; padding: 12px; border-radius: 8px;
             border: 1px solid #333; margin-bottom: 8px;
         }
@@ -87,11 +82,6 @@
         .line-adv-grid > div { display: flex; flex-direction: column; gap: 4px; }
         .full-row { grid-column: span 2; }
 
-        /* 画像レイヤーボックス */
-        .img-box {
-            background: #1c1c1e; padding: 12px; border-radius: 10px;
-            border: 2px solid #444; margin-bottom: 12px;
-        }
         .handle {
             background: #333; padding: 8px; text-align: center; border-radius: 6px;
             cursor: grab; margin-bottom: 12px; font-size: 12px; font-weight: bold; color: var(--accent);
@@ -99,7 +89,6 @@
         }
         .handle:active { cursor: grabbing; }
 
-        /* テンプレートリスト表示 */
         .template-list {
             max-height: 150px; overflow-y: auto; background: #121214;
             border-radius: 8px; padding: 5px; border: 1px solid #333;
@@ -108,16 +97,14 @@
             display: flex; justify-content: space-between; align-items: center;
             padding: 8px; border-bottom: 1px solid #222; font-size: 12px;
         }
-        .template-item:last-child { border: none; }
 
         button.save-btn {
             background: var(--save); color: #fff; border: none; font-weight: bold;
             padding: 20px; font-size: 18px; cursor: pointer; border-radius: 12px;
-            transition: transform 0.1s;
         }
-        button.save-btn:active { transform: scale(0.98); }
 
         .btn-blue { background: var(--accent); border: none; cursor: pointer; font-size: 11px; padding: 8px; }
+        .btn-green { background: var(--save); border: none; cursor: pointer; font-size: 11px; padding: 8px; }
         .btn-danger { background: var(--danger); border: none; color: white; cursor: pointer; font-size: 11px; padding: 6px; border-radius: 4px; }
 
         .adv-ui { display: none; }
@@ -132,12 +119,10 @@
 <body>
 
     <div class="wrapper">
-        <!-- 左：ライブプレビュー -->
         <div class="preview-area">
             <canvas id="mainCanvas" width="1920" height="1080"></canvas>
         </div>
 
-        <!-- 右：コントロールパネル -->
         <div class="editor-panel">
             <div class="editor-content">
                 <header><h2>画像生成ツール (1920x1080)</h2></header>
@@ -149,16 +134,13 @@
                         <input type="text" id="tplName" placeholder="保存する名前を入力...">
                         <button class="btn-blue" style="margin-top:5px; font-weight:bold;" onclick="storeTemplate()">現在の構成を保存</button>
                     </div>
-                    <div class="template-list" id="tplList">
-                        <!-- ここに保存したリストが入る -->
-                    </div>
+                    <div class="template-list" id="tplList"></div>
                 </div>
 
-                <!-- 2. テキスト設定 -->
+                <!-- 2. テキスト設定（固定4行） -->
                 <div class="section">
                     <div class="section-title">✍️ テキスト内容・行別設定</div>
                     <div id="line-container">
-                        <!-- 行1-4。初期文字を指定のものに変更 -->
                         <div class="line-box" id="box1">
                             <input type="text" id="line1" value="タイトル" style="width:100%; box-sizing:border-box; font-size: 16px;">
                             <div class="line-adv-grid adv-ui">
@@ -175,9 +157,9 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="line-box" id="box2"><input type="text" id="line2" value="サブタイトル" style="width:100%; box-sizing:border-box;"><div class="line-adv-grid adv-ui"><div><label>フォント</label><select id="fFam2" class="font-sel"></select></div><div><label>サイズ</label><select id="fSize2"></select></div><div><label>配置</label><select id="lAln2"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;"><div><label>文字色</label><input type="color" id="color2" value="#FFFFFF"></div><div><label>縁色</label><input type="color" id="stroke2" value="#464678"></div></div><div class="full-row"><div class="sync-row"><input type="range" id="lH2" min="50" max="600" value="230"><input type="number" id="lH2N" class="num-in" value="230"></div></div></div></div>
-                        <div class="line-box" id="box3"><input type="text" id="line3" value="内容1" style="width:100%; box-sizing:border-box;"><div class="line-adv-grid adv-ui"><div><label>フォント</label><select id="fFam3" class="font-sel"></select></div><div><label>サイズ</label><select id="fSize3"></select></div><div><label>配置</label><select id="lAln3"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;"><div><label>文字色</label><input type="color" id="color3" value="#FFFFFF"></div><div><label>縁色</label><input type="color" id="stroke3" value="#464678"></div></div><div class="full-row"><div class="sync-row"><input type="range" id="lH3" min="50" max="600" value="230"><input type="number" id="lH3N" class="num-in" value="230"></div></div></div></div>
-                        <div class="line-box" id="box4"><input type="text" id="line4" value="内容2" style="width:100%; box-sizing:border-box;"><div class="line-adv-grid adv-ui"><div><label>フォント</label><select id="fFam4" class="font-sel"></select></div><div><label>サイズ</label><select id="fSize4"></select></div><div><label>配置</label><select id="lAln4"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;"><div><label>文字色</label><input type="color" id="color4" value="#FFFFFF"></div><div><label>縁色</label><input type="color" id="stroke4" value="#464678"></div></div></div></div>
+                        <div class="line-box" id="box2"><input type="text" id="line2" value="サブタイトル" style="width:100%; box-sizing:border-box;"><div class="line-adv-grid adv-ui"><div><label>フォント</label><select id="fFam2" class="font-sel"></select></div><div><label>サイズ</label><select id="fSize2"></select></div><div><label>配置</label><select id="lAln2"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;"><div><input type="color" id="color2" value="#FFFFFF"></div><div><input type="color" id="stroke2" value="#464678"></div></div><div class="full-row"><div class="sync-row"><input type="range" id="lH2" min="50" max="600" value="230"><input type="number" id="lH2N" class="num-in" value="230"></div></div></div></div>
+                        <div class="line-box" id="box3"><input type="text" id="line3" value="内容1" style="width:100%; box-sizing:border-box;"><div class="line-adv-grid adv-ui"><div><label>フォント</label><select id="fFam3" class="font-sel"></select></div><div><label>サイズ</label><select id="fSize3"></select></div><div><label>配置</label><select id="lAln3"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;"><div><input type="color" id="color3" value="#FFFFFF"></div><div><input type="color" id="stroke3" value="#464678"></div></div><div class="full-row"><div class="sync-row"><input type="range" id="lH3" min="50" max="600" value="230"><input type="number" id="lH3N" class="num-in" value="230"></div></div></div></div>
+                        <div class="line-box" id="box4"><input type="text" id="line4" value="内容2" style="width:100%; box-sizing:border-box;"><div class="line-adv-grid adv-ui"><div><label>フォント</label><select id="fFam4" class="font-sel"></select></div><div><label>サイズ</label><select id="fSize4"></select></div><div><label>配置</label><select id="lAln4"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;"><div><input type="color" id="color4" value="#FFFFFF"></div><div><input type="color" id="stroke4" value="#464678"></div></div></div></div>
                     </div>
                     <div class="group" style="background:#333; padding:12px; border-radius:10px; display:flex; align-items:center; gap:10px; cursor:pointer; border:1px solid #444;">
                         <input type="checkbox" id="advancedToggle">
@@ -211,12 +193,17 @@
                         <label>新規画像を追加 (複数可)</label>
                         <input type="file" id="imageUpload" accept="image/*" multiple>
                     </div>
-                    <div id="image-controls-container">
-                        <!-- 動的に追加される画像パネル -->
-                    </div>
+                    <div id="image-controls-container"></div>
                 </div>
 
-                <!-- 5. 全体レイアウト -->
+                <!-- ★新機能 5. フリー文字管理 -->
+                <div class="section">
+                    <div class="section-title">💬 フリー文字管理 (自由配置テキスト)</div>
+                    <button class="btn-green" onclick="addFreeText()">+ 文字レイヤーを追加</button>
+                    <div id="free-text-container"></div>
+                </div>
+
+                <!-- 6. 全体レイアウト -->
                 <div class="section">
                     <div class="section-title">📐 全体レイアウト設定</div>
                     <div class="group">
@@ -229,6 +216,8 @@
                             </select>
                             <button class="btn-blue" onclick="loadSystemFonts()">PCフォント読込</button>
                         </div>
+                        <!-- ★追加：詳細フォント上書きボタン -->
+                        <button class="btn-blue" style="margin-top:8px; background:#555;" onclick="overwriteDetailedFonts()">詳細設定のフォントを全体設定で上書き</button>
                     </div>
                     <div class="row">
                         <div class="group"><label>共通位置揃え</label><select id="textAlignment"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div>
@@ -236,14 +225,8 @@
                     </div>
                     <div class="group standard-ui">
                         <div class="row">
-                            <div class="group">
-                                <label>共通サイズ</label>
-                                <div class="sync-row"><input type="range" id="fontSize" min="20" max="500" value="200"><input type="number" id="fontSizeN" class="num-in" value="200"></div>
-                            </div>
-                            <div class="group">
-                                <label>共通行高</label>
-                                <div class="sync-row"><input type="range" id="lineHeight" min="50" max="600" value="230"><input type="number" id="lineHeightNum" class="num-in" value="230"></div>
-                            </div>
+                            <div class="group"><label>共通サイズ</label><div class="sync-row"><input type="range" id="fontSize" min="20" max="500" value="200"><input type="number" id="fontSizeN" class="num-in" value="200"></div></div>
+                            <div class="group"><label>共通行高</label><div class="sync-row"><input type="range" id="lineHeight" min="50" max="600" value="230"><input type="number" id="lineHeightNum" class="num-in" value="230"></div></div>
                         </div>
                     </div>
                     <div class="group">
@@ -262,7 +245,6 @@
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
         
-        // 全てのコントロールID
         const controlIds = [
             'bgColor','lineCount','line1','line2','line3','line4',
             'color1','color2','color3','color4','stroke1','stroke2','stroke3','stroke4',
@@ -273,23 +255,18 @@
         ];
 
         let uploadedImages = [];
+        let freeTexts = []; // { text, x, y, size, font, color, sColor, sWidth, align, id }
         const sizeOptions = [50, 80, 100, 120, 150, 180, 200, 250, 300, 350, 400, 500];
 
-        // 1. 同期関数（要素チェック付き）
+        // 1. 同期関数
         function setupSync(rangeId, numId, dispId) {
             const r = document.getElementById(rangeId), n = document.getElementById(numId), d = dispId ? document.getElementById(dispId) : null;
             if (!r || !n) return;
-            const update = (v) => { 
-                r.value = v; 
-                n.value = v; 
-                if(d) d.innerText = v;
-                draw(); 
-            };
+            const update = (v) => { r.value = v; n.value = v; if(d) d.innerText = v; draw(); };
             r.addEventListener('input', () => update(r.value));
             n.addEventListener('input', () => update(n.value));
         }
         
-        // 数値同期の設定
         setupSync('fontSize','fontSizeN'); 
         setupSync('lineHeight','lineHeightNum'); 
         setupSync('borderWidth','borderWidthN', 'borderWidthDisp'); 
@@ -298,7 +275,6 @@
         setupSync('lH2','lH2N', 'lH2Disp'); 
         setupSync('lH3','lH3N', 'lH3Disp');
 
-        // サイズ選択肢生成
         ['fSize1','fSize2','fSize3','fSize4'].forEach(id => {
             const s = document.getElementById(id);
             sizeOptions.forEach(v => s.add(new Option(v + 'px', v, v===200, v===200)));
@@ -306,7 +282,6 @@
 
         window.onload = () => { refreshTplList(); draw(); };
 
-        // 全コントロールへの入力イベント一括適用
         controlIds.forEach(id => {
             const el = document.getElementById(id);
             if(!el) return;
@@ -320,8 +295,8 @@
             });
         });
 
-        // 2. 画像管理システム
-        let dragIdx = null;
+        // 2. 画像管理
+        let dragImgIdx = null;
         function renderImages() {
             const container = document.getElementById('image-controls-container');
             container.innerHTML = '';
@@ -330,10 +305,10 @@
                 const box = document.createElement('div');
                 box.className = 'img-box';
                 box.innerHTML = `
-                    <div class="handle" draggable="true">☰ 画像レイヤー ${idx + 1} (ドラッグして重ね順変更)</div>
+                    <div class="handle" draggable="true">☰ 画像レイヤー ${idx + 1} (順序変更)</div>
                     <div class="row" style="margin-bottom:10px;">
-                        <button class="btn-danger" onclick="removeImg(${idx})">この画像を削除</button>
-                        <button class="btn-blue" onclick="resetImg(${idx})">初期位置に戻す</button>
+                        <button class="btn-danger" onclick="removeImg(${idx})">削除</button>
+                        <button class="btn-blue" onclick="resetImg(${idx})">中央リセット</button>
                     </div>
                     <div class="group">
                         <label>スケール (%): ${data.scale}</label>
@@ -342,42 +317,18 @@
                             <input type="number" class="num-in" value="${data.scale}" oninput="updateImg(${idx}, 'scale', this.value)">
                         </div>
                     </div>
-                    <div class="group" style="margin-top:10px;">
-                        <label>左右位置 (X)</label>
-                        <div class="sync-row">
-                            <input type="range" min="0" max="1920" value="${data.x}" oninput="updateImg(${idx}, 'x', this.value)">
-                            <input type="number" class="num-in" value="${data.x}" oninput="updateImg(${idx}, 'x', this.value)">
-                        </div>
-                    </div>
-                    <div class="group" style="margin-top:10px;">
-                        <label>上下位置 (Y)</label>
-                        <div class="sync-row">
-                            <input type="range" min="0" max="1080" value="${data.y}" oninput="updateImg(${idx}, 'y', this.value)">
-                            <input type="number" class="num-in" value="${data.y}" oninput="updateImg(${idx}, 'y', this.value)">
-                        </div>
+                    <div class="group" style="margin-top:10px;"><label>位置 X / Y</label>
+                        <div class="sync-row"><input type="range" min="0" max="1920" value="${data.x}" oninput="updateImg(${idx}, 'x', this.value)"><input type="number" class="num-in" value="${data.x}" oninput="updateImg(${idx}, 'x', this.value)"></div>
+                        <div class="sync-row" style="margin-top:5px;"><input type="range" min="0" max="1080" value="${data.y}" oninput="updateImg(${idx}, 'y', this.value)"><input type="number" class="num-in" value="${data.y}" oninput="updateImg(${idx}, 'y', this.value)"></div>
                     </div>
                 `;
-                
-                // 入力要素でドラッグが始まらないようバブリング停止 (mousedownとtouchstartの両方で実行)
-                box.querySelectorAll('input, button').forEach(el => {
-                    const stopDrag = (e) => e.stopPropagation();
-                    el.onmousedown = stopDrag;
-                    el.ontouchstart = stopDrag;
-                });
-
+                box.querySelectorAll('input, button').forEach(el => { el.onmousedown = (e) => e.stopPropagation(); el.ontouchstart = (e) => e.stopPropagation(); });
                 const h = box.querySelector('.handle');
-                h.ondragstart = () => { 
-                    dragIdx = idx; 
-                    box.style.opacity = '0.5'; 
-                };
-                h.ondragend = () => { 
-                    dragIdx = null; 
-                    box.style.opacity = '1'; 
-                    renderImages(); 
-                };
+                h.ondragstart = () => { dragImgIdx = idx; box.style.opacity = '0.5'; };
+                h.ondragend = () => { dragImgIdx = null; box.style.opacity = '1'; renderImages(); };
                 box.ondragover = (e) => e.preventDefault();
-                box.ondrop = () => { if(dragIdx !== null && dragIdx !== idx) {
-                    const item = uploadedImages.splice(dragIdx, 1)[0];
+                box.ondrop = () => { if(dragImgIdx !== null && dragImgIdx !== idx) {
+                    const item = uploadedImages.splice(dragImgIdx, 1)[0];
                     uploadedImages.splice(idx, 0, item);
                     renderImages(); draw();
                 }};
@@ -390,10 +341,7 @@
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     const img = new Image();
-                    img.onload = () => { 
-                        uploadedImages.push({ img, x: 960, y: 540, scale: 70, src: ev.target.result }); 
-                        renderImages(); draw(); 
-                    };
+                    img.onload = () => { uploadedImages.push({ img, x: 960, y: 540, scale: 70, src: ev.target.result }); renderImages(); draw(); };
                     img.src = ev.target.result;
                 };
                 reader.readAsDataURL(file);
@@ -404,31 +352,106 @@
         function resetImg(idx) { uploadedImages[idx].x = 960; uploadedImages[idx].y = 540; uploadedImages[idx].scale = 70; renderImages(); draw(); }
         function removeImg(idx) { uploadedImages.splice(idx, 1); renderImages(); draw(); }
 
+        // 3. フリー文字管理
+        let dragTxtIdx = null;
+        function addFreeText() {
+            freeTexts.push({
+                text: '新規テキスト',
+                x: 960, y: 540, size: 100, 
+                font: document.getElementById('fontFamily').value,
+                color: '#FFFFFF', sColor: '#464678', sWidth: 5, align: 'center', id: Date.now()
+            });
+            renderFreeTexts();
+            draw();
+        }
+
+        function renderFreeTexts() {
+            const container = document.getElementById('free-text-container');
+            container.innerHTML = '';
+            const fontsHTML = Array.from(document.getElementById('fontFamily').options).map(o => `<option value="${o.value}">${o.text}</option>`).join('');
+
+            [...freeTexts].reverse().forEach((data, i) => {
+                const idx = freeTexts.length - 1 - i;
+                const box = document.createElement('div');
+                box.className = 'text-layer-box';
+                box.innerHTML = `
+                    <div class="handle" draggable="true">☰ 文字レイヤー ${idx + 1} (順序変更)</div>
+                    <textarea style="width:100%; height:40px; box-sizing:border-box; margin-bottom:10px;" oninput="updateFreeText(${idx}, 'text', this.value)">${data.text}</textarea>
+                    <div class="line-adv-grid">
+                        <div><label>フォント</label><select onchange="updateFreeText(${idx}, 'font', this.value)">${fontsHTML}</select></div>
+                        <div><label>配置</label><select onchange="updateFreeText(${idx}, 'align', this.value)"><option value="center" ${data.align==='center'?'selected':''}>中央</option><option value="left" ${data.align==='left'?'selected':''}>左寄</option><option value="right" ${data.align==='right'?'selected':''}>右寄</option></select></div>
+                        <div><label>文字色</label><input type="color" value="${data.color}" oninput="updateFreeText(${idx}, 'color', this.value)"></div>
+                        <div><label>縁色</label><input type="color" value="${data.sColor}" oninput="updateFreeText(${idx}, 'sColor', this.value)"></div>
+                        <div class="full-row"><label>サイズ / 縁太さ</label>
+                            <div class="sync-row"><input type="range" min="10" max="500" value="${data.size}" oninput="updateFreeText(${idx}, 'size', this.value)"><input type="number" class="num-in" value="${data.size}" oninput="updateFreeText(${idx}, 'size', this.value)"></div>
+                            <div class="sync-row" style="margin-top:5px;"><input type="range" min="0" max="50" value="${data.sWidth}" oninput="updateFreeText(${idx}, 'sWidth', this.value)"><input type="number" class="num-in" value="${data.sWidth}" oninput="updateFreeText(${idx}, 'sWidth', this.value)"></div>
+                        </div>
+                        <div class="full-row"><label>位置 X / Y</label>
+                            <div class="sync-row"><input type="range" min="0" max="1920" value="${data.x}" oninput="updateFreeText(${idx}, 'x', this.value)"><input type="number" class="num-in" value="${data.x}" oninput="updateFreeText(${idx}, 'x', this.value)"></div>
+                            <div class="sync-row" style="margin-top:5px;"><input type="range" min="0" max="1080" value="${data.y}" oninput="updateFreeText(${idx}, 'y', this.value)"><input type="number" class="num-in" value="${data.y}" oninput="updateFreeText(${idx}, 'y', this.value)"></div>
+                        </div>
+                    </div>
+                    <button class="btn-danger" style="width:100%; margin-top:10px;" onclick="removeFreeText(${idx})">このテキストを削除</button>
+                `;
+                box.querySelectorAll('input, select, textarea, button').forEach(el => { el.onmousedown = (e) => e.stopPropagation(); el.ontouchstart = (e) => e.stopPropagation(); });
+                const h = box.querySelector('.handle');
+                h.ondragstart = () => { dragTxtIdx = idx; box.style.opacity = '0.5'; };
+                h.ondragend = () => { dragTxtIdx = null; box.style.opacity = '1'; renderFreeTexts(); };
+                box.ondragover = (e) => e.preventDefault();
+                box.ondrop = () => { if(dragTxtIdx !== null && dragTxtIdx !== idx) {
+                    const item = freeTexts.splice(dragTxtIdx, 1)[0];
+                    freeTexts.splice(idx, 0, item);
+                    renderFreeTexts(); draw();
+                }};
+                container.appendChild(box);
+            });
+        }
+
+        function updateFreeText(idx, p, v) { 
+            freeTexts[idx][p] = (p==='text' || p==='font' || p==='color' || p==='sColor' || p==='align') ? v : parseInt(v) || 0; 
+            draw(); 
+        }
+        function removeFreeText(idx) { freeTexts.splice(idx, 1); renderFreeTexts(); draw(); }
+
+        // 4. フォント・テンプレート・上書き機能
         async function loadSystemFonts() {
-            if (!window.queryLocalFonts) return alert("お使いのブラウザはPCフォントの参照に対応していません。");
+            if (!window.queryLocalFonts) return alert("お使いのブラウザは非対応です。");
             try {
                 const fonts = await window.queryLocalFonts();
-                const sels = document.querySelectorAll('.font-sel');
+                const selectors = document.querySelectorAll('.font-sel');
                 const exist = new Set();
-                fonts.forEach(f => { if(!exist.has(f.family)) { sels.forEach(s => s.add(new Option(f.family, `"${f.family}"`))); exist.add(f.family); } });
+                fonts.forEach(f => { if(!exist.has(f.family)) { selectors.forEach(s => s.add(new Option(f.family, `"${f.family}"`))); exist.add(f.family); } });
+                renderFreeTexts(); // フリー文字側のセレクトボックスも更新
                 alert("PC内のフォントを読み込みました。");
             } catch (err) { console.error(err); }
         }
 
+        function overwriteDetailedFonts() {
+            const globalFont = document.getElementById('fontFamily').value;
+            for(let i=1; i<=4; i++) {
+                const el = document.getElementById(`fFam${i}`);
+                if(el) { el.value = globalFont; el.dispatchEvent(new Event('input')); }
+            }
+        }
+
         function storeTemplate() {
             const name = document.getElementById('tplName').value.trim();
-            if(!name) return alert("テンプレート名を入力してください。");
-            const config = { controls: {}, images: uploadedImages.map(it => ({ x: it.x, y: it.y, scale: it.scale, src: it.src })) };
+            if(!name) return alert("名前を入力してください。");
+            const config = { 
+                controls: {}, 
+                images: uploadedImages.map(it => ({ x: it.x, y: it.y, scale: it.scale, src: it.src })),
+                freeTexts: freeTexts
+            };
             controlIds.forEach(id => { const el = document.getElementById(id); config.controls[id] = el.type === 'checkbox' ? el.checked : el.value; });
-            const tpls = JSON.parse(localStorage.getItem('imggen_ultimate_v8') || '{}');
+            const tpls = JSON.parse(localStorage.getItem('imggen_ultimate_v9') || '{}');
             tpls[name] = config;
-            localStorage.setItem('imggen_ultimate_v8', JSON.stringify(tpls));
+            localStorage.setItem('imggen_ultimate_v9', JSON.stringify(tpls));
             refreshTplList();
         }
 
         function refreshTplList() {
             const list = document.getElementById('tplList');
-            const tpls = JSON.parse(localStorage.getItem('imggen_ultimate_v8') || '{}');
+            const tpls = JSON.parse(localStorage.getItem('imggen_ultimate_v9') || '{}');
             list.innerHTML = '';
             Object.keys(tpls).forEach(n => {
                 const item = document.createElement('div');
@@ -439,52 +462,61 @@
         }
 
         function applyTpl(n) {
-            const tpls = JSON.parse(localStorage.getItem('imggen_ultimate_v8') || '{}');
+            const tpls = JSON.parse(localStorage.getItem('imggen_ultimate_v9') || '{}');
             const conf = tpls[n];
             Object.keys(conf.controls).forEach(id => {
                 const el = document.getElementById(id);
                 if(el) { el[el.type === 'checkbox' ? 'checked' : 'value'] = conf.controls[id]; el.dispatchEvent(new Event('input')); }
             });
             uploadedImages = [];
-            if(!conf.images) return;
+            freeTexts = conf.freeTexts || [];
+            if(!conf.images) { renderFreeTexts(); draw(); return; }
             let loaded = 0;
             conf.images.forEach(d => {
                 const img = new Image();
-                img.onload = () => { uploadedImages.push({ img, x: d.x, y: d.y, scale: d.scale, src: d.src }); loaded++; if(loaded === conf.images.length) { renderImages(); draw(); } };
+                img.onload = () => { uploadedImages.push({ img, x: d.x, y: d.y, scale: d.scale, src: d.src }); loaded++; if(loaded === conf.images.length) { renderImages(); renderFreeTexts(); draw(); } };
                 img.src = d.src;
             });
         }
 
-        function dropTpl(n) { if(confirm("削除してもよろしいですか？")) { const t = JSON.parse(localStorage.getItem('imggen_ultimate_v8') || '{}'); delete t[n]; localStorage.setItem('imggen_ultimate_v8', JSON.stringify(t)); refreshTplList(); } }
+        function dropTpl(n) { if(confirm("消去しますか？")) { const t = JSON.parse(localStorage.getItem('imggen_ultimate_v9') || '{}'); delete t[n]; localStorage.setItem('imggen_ultimate_v9', JSON.stringify(t)); refreshTplList(); } }
 
+        // 5. 描画
         function draw() {
             const isAdv = document.getElementById('advancedToggle').checked;
             ctx.fillStyle = document.getElementById('bgColor').value;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+            // 1. 画像レイヤー
             uploadedImages.forEach(item => {
                 const base = Math.min(canvas.width / item.img.width, canvas.height / item.img.height);
                 const f = base * (item.scale / 100);
-                const w = item.img.width * f; const h = item.img.height * f;
+                const w = item.img.width * f, h = item.img.height * f;
                 ctx.drawImage(item.img, item.x - (w/2), item.y - (h/2), w, h);
             });
 
-            ctx.textBaseline = "middle";
-            ctx.lineJoin = "miter"; 
-            ctx.miterLimit = 2;
+            // 2. フリー文字レイヤー
+            ctx.lineJoin = "miter"; ctx.miterLimit = 2; ctx.textBaseline = "middle";
+            freeTexts.forEach(t => {
+                ctx.textAlign = t.align;
+                ctx.font = `bold ${t.size}px ${t.font}`;
+                ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 15;
+                if (t.sWidth > 0) { ctx.strokeStyle = t.sColor; ctx.lineWidth = t.sWidth; ctx.strokeText(t.text, t.x, t.y); }
+                ctx.shadowColor = "transparent"; ctx.fillStyle = t.color;
+                ctx.fillText(t.text, t.x, t.y);
+            });
 
+            // 3. 固定テキスト（4行）
             const lineCount = parseInt(document.getElementById('lineCount').value);
             const globalH = parseInt(document.getElementById('lineHeight').value);
             const globalAlign = document.getElementById('textAlignment').value;
             const globalFont = document.getElementById('fontFamily').value;
             const strokeWidth = parseInt(document.getElementById('textStrokeWidth').value);
-
             let totalH = 0; const hList = [];
             for (let i = 0; i < lineCount - 1; i++) {
                 const h = isAdv ? parseInt(document.getElementById(`lH${i+1}`).value) : globalH;
                 hList.push(h); totalH += h;
             }
-
             let currY = (canvas.height / 2) - (totalH / 2);
             for (let i = 0; i < lineCount; i++) {
                 const idx = i + 1;
@@ -494,28 +526,19 @@
                 const font = isAdv ? document.getElementById(`fFam${idx}`).value : globalFont;
                 const color = isAdv ? document.getElementById(`color${idx}`).value : document.getElementById('globalTextColor').value;
                 const sCol = isAdv ? document.getElementById(`stroke${idx}`).value : document.getElementById('globalTextStrokeColor').value;
-
                 ctx.textAlign = aln;
-                let x = canvas.width / 2;
-                if(aln==='left') x=150; if(aln==='right') x=canvas.width-150;
-
+                let x = canvas.width / 2; if(aln==='left') x=150; if(aln==='right') x=canvas.width-150;
                 ctx.font = `bold ${size}px ${font || globalFont}`;
                 ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 15;
-                if (strokeWidth > 0) {
-                    ctx.strokeStyle = sCol; ctx.lineWidth = strokeWidth;
-                    ctx.strokeText(txt, x, currY);
-                }
+                if (strokeWidth > 0) { ctx.strokeStyle = sCol; ctx.lineWidth = strokeWidth; ctx.strokeText(txt, x, currY); }
                 ctx.shadowColor = "transparent"; ctx.fillStyle = color;
                 ctx.fillText(txt, x, currY);
                 if (i < lineCount - 1) currY += hList[i];
             }
 
+            // 4. 外枠
             const bW = parseInt(document.getElementById('borderWidth').value);
-            if (bW > 0) {
-                ctx.strokeStyle = document.getElementById('borderColor').value;
-                ctx.lineWidth = bW;
-                ctx.strokeRect(bW/2, bW/2, canvas.width - bW, canvas.height - bW);
-            }
+            if (bW > 0) { ctx.strokeStyle = document.getElementById('borderColor').value; ctx.lineWidth = bW; ctx.strokeRect(bW/2, bW/2, canvas.width - bW, canvas.height - bW); }
         }
 
         document.getElementById('saveBtn').addEventListener('click', () => {
