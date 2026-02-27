@@ -142,7 +142,7 @@
             <div class="editor-content">
                 <header><h2>画像生成ツール (1920x1080)</h2></header>
 
-                <!-- 1. テンプレート保存 -->
+                <!-- 1. テンプレート管理 -->
                 <div class="section">
                     <div class="section-title">📁 テンプレート管理</div>
                     <div class="group">
@@ -342,20 +342,39 @@
                             <input type="number" class="num-in" value="${data.scale}" oninput="updateImg(${idx}, 'scale', this.value)">
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="group"><label>左右位置 (X)</label><input type="number" class="num-in" style="width:100%" value="${data.x}" oninput="updateImg(${idx}, 'x', this.value)"></div>
-                        <div class="group"><label>上下位置 (Y)</label><input type="number" class="num-in" style="width:100%" value="${data.y}" oninput="updateImg(${idx}, 'y', this.value)"></div>
+                    <div class="group" style="margin-top:10px;">
+                        <label>左右位置 (X)</label>
+                        <div class="sync-row">
+                            <input type="range" min="0" max="1920" value="${data.x}" oninput="updateImg(${idx}, 'x', this.value)">
+                            <input type="number" class="num-in" value="${data.x}" oninput="updateImg(${idx}, 'x', this.value)">
+                        </div>
+                    </div>
+                    <div class="group" style="margin-top:10px;">
+                        <label>上下位置 (Y)</label>
+                        <div class="sync-row">
+                            <input type="range" min="0" max="1080" value="${data.y}" oninput="updateImg(${idx}, 'y', this.value)">
+                            <input type="number" class="num-in" value="${data.y}" oninput="updateImg(${idx}, 'y', this.value)">
+                        </div>
                     </div>
                 `;
                 
+                // 入力要素でドラッグが始まらないようバブリング停止 (mousedownとtouchstartの両方で実行)
                 box.querySelectorAll('input, button').forEach(el => {
-                    el.onmousedown = (e) => e.stopPropagation();
-                    el.ontouchstart = (e) => e.stopPropagation();
+                    const stopDrag = (e) => e.stopPropagation();
+                    el.onmousedown = stopDrag;
+                    el.ontouchstart = stopDrag;
                 });
 
                 const h = box.querySelector('.handle');
-                h.ondragstart = () => { dragIdx = idx; box.style.opacity = '0.5'; };
-                h.ondragend = () => { dragIdx = null; box.style.opacity = '1'; renderImages(); };
+                h.ondragstart = () => { 
+                    dragIdx = idx; 
+                    box.style.opacity = '0.5'; 
+                };
+                h.ondragend = () => { 
+                    dragIdx = null; 
+                    box.style.opacity = '1'; 
+                    renderImages(); 
+                };
                 box.ondragover = (e) => e.preventDefault();
                 box.ondrop = () => { if(dragIdx !== null && dragIdx !== idx) {
                     const item = uploadedImages.splice(dragIdx, 1)[0];
