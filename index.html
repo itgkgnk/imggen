@@ -3,17 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>画像生成ツール 2026 Final Pro v5</title>
+    <title>画像生成ツール 2026 Ultimate</title>
     <style>
         :root {
-            --bg-dark: #121214;
-            --panel-bg: #1c1c1e;
-            --section-bg: #252526;
-            --accent: #0a84ff;
-            --border: #333;
-            --text-blue: #0a84ff;
-            --danger: #ff453a;
-            --save: #30d158;
+            --bg-dark: #121214; --panel-bg: #1c1c1e; --section-bg: #252526;
+            --accent: #0a84ff; --border: #333; --text-blue: #0a84ff;
+            --danger: #ff453a; --save: #30d158;
         }
 
         html, body {
@@ -38,7 +33,7 @@
 
         /* 右：操作パネル */
         .editor-panel {
-            width: 480px; background: var(--panel-bg);
+            width: 500px; background: var(--panel-bg);
             border-left: 1px solid var(--border);
             display: flex; flex-direction: column; overflow-y: auto;
         }
@@ -52,7 +47,7 @@
         }
         .section-title {
             font-size: 11px; font-weight: bold; color: var(--text-blue);
-            text-transform: uppercase; margin-bottom: 5px; display: flex; align-items: center; gap: 5px;
+            text-transform: uppercase; margin-bottom: 5px;
         }
 
         header { border-bottom: 1px solid var(--border); padding-bottom: 10px; }
@@ -61,53 +56,43 @@
         .group { display: flex; flex-direction: column; gap: 5px; }
         label { font-size: 10px; font-weight: bold; color: #aaa; }
         
-        /* カラーピッカーの見た目を修正 */
-        input[type="color"] {
-            width: 100%;
-            height: 40px;
-            padding: 2px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            background: #2c2c2e;
-            cursor: pointer;
-            -webkit-appearance: none;
-        }
-        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
-        input[type="color"]::-webkit-color-swatch { border: none; border-radius: 4px; }
-
-        input[type="text"], input[type="number"], select, button {
+        input, select, button {
             background: #2c2c2e; border: 1px solid var(--border);
-            color: #fff; padding: 10px; border-radius: 6px; font-size: 13px;
+            color: #fff; padding: 8px; border-radius: 6px; font-size: 13px;
         }
 
-        input[type="range"] { width: 100%; margin: 5px 0; }
+        .input-sync-container { display: flex; align-items: center; gap: 10px; }
+        .num-input { width: 60px; text-align: center; }
 
         .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         
-        /* 詳細行ボックス：はみ出し防止 */
         .line-box {
             background: #1c1c1e; padding: 12px; border-radius: 8px;
             border: 1px solid #333; margin-bottom: 8px;
-            overflow: hidden;
         }
 
-        /* 詳細拡張グリッド：要素が重ならないように調整 */
-        .line-adv-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-top: 10px;
-        }
-        .line-adv-grid > div { display: flex; flex-direction: column; gap: 4px; }
-        .full-row { grid-column: span 2; }
-
-        /* 画像管理ボックス */
         .img-box {
             background: #1c1c1e; padding: 12px; border-radius: 8px;
             border: 1px solid #444; margin-bottom: 10px;
-            cursor: grab;
         }
-        .img-box.dragging { opacity: 0.5; border-color: var(--accent); }
+        .drag-handle { cursor: grab; background: #333; padding: 5px; text-align: center; border-radius: 4px; margin-bottom: 10px; }
+        .drag-handle:active { cursor: grabbing; }
+
+        .line-adv-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;
+        }
+        .full-row { grid-column: span 2; }
+
+        /* テンプレートリスト */
+        .template-list {
+            max-height: 150px; overflow-y: auto; background: #121214;
+            border-radius: 6px; padding: 5px; margin-top: 10px;
+        }
+        .template-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 5px; border-bottom: 1px solid #333; font-size: 12px;
+        }
+        .template-item:last-child { border: none; }
 
         button.save-btn {
             background: var(--save); color: #fff; border: none; font-weight: bold;
@@ -115,7 +100,7 @@
         }
 
         .btn-blue { background: var(--accent); border: none; cursor: pointer; font-size: 11px; padding: 5px; }
-        .btn-danger { background: #444; border: none; cursor: pointer; font-size: 10px; padding: 5px; }
+        .btn-danger { background: var(--danger); border: none; color: white; cursor: pointer; font-size: 10px; padding: 4px; border-radius: 4px; }
 
         .adv-ui { display: none; }
 
@@ -135,14 +120,16 @@
 
         <div class="editor-panel">
             <div class="editor-content">
-                <header><h2>IMAGE GENERATOR PRO v5</h2></header>
+                <header><h2>IMAGE GENERATOR ULTIMATE</h2></header>
 
                 <div class="section">
-                    <div class="section-title">📁 記録・保存</div>
-                    <div class="row">
-                        <button onclick="saveToBrowser()">ブラウザ保存</button>
-                        <button onclick="loadFromBrowser()">ブラウザ読込</button>
+                    <div class="section-title">📁 テンプレート管理</div>
+                    <div class="group">
+                        <input type="text" id="newTemplateName" placeholder="テンプレート名を入力...">
+                        <button class="btn-blue" onclick="saveCurrentToTemplates()">現在の設定を保存</button>
                     </div>
+                    <div class="template-list" id="templateList">
+                        </div>
                 </div>
 
                 <div class="section">
@@ -151,83 +138,55 @@
                         <div class="line-box" id="box1">
                             <input type="text" id="line1" value="タイトル" style="width:100%; box-sizing:border-box;">
                             <div class="line-adv-grid adv-ui">
+                                <div><label>フォント</label><select id="fFamily1" class="font-selector"></select></div>
                                 <div><label>サイズ</label><select id="fSize1"></select></div>
                                 <div><label>配置</label><select id="lAlign1"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div>
-                                <div><label>文字色</label><input type="color" id="color1" value="#FFFFFF"></div>
-                                <div><label>縁色</label><input type="color" id="stroke1" value="#464678"></div>
-                                <div class="full-row">
-                                    <label>次行への高さ: <span id="lHeight1Val">230</span>px</label>
-                                    <input type="range" id="lHeight1" min="50" max="600" value="230">
+                                <div style="display:flex; gap:5px;">
+                                    <div style="flex:1;"><label>色</label><input type="color" id="color1" value="#FFFFFF"></div>
+                                    <div style="flex:1;"><label>縁</label><input type="color" id="stroke1" value="#464678"></div>
+                                </div>
+                                <div class="full-row group">
+                                    <label>次行への高さ</label>
+                                    <div class="input-sync-container">
+                                        <input type="range" id="lHeight1" min="50" max="600" value="230">
+                                        <input type="number" id="lHeight1Num" class="num-input" value="230">
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="line-box" id="box2">
-                            <input type="text" id="line2" value="2026年 2月" style="width:100%; box-sizing:border-box;">
-                            <div class="line-adv-grid adv-ui">
-                                <div><label>サイズ</label><select id="fSize2"></select></div>
-                                <div><label>配置</label><select id="lAlign2"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div>
-                                <div><label>文字色</label><input type="color" id="color2" value="#FFFFFF"></div>
-                                <div><label>縁色</label><input type="color" id="stroke2" value="#464678"></div>
-                                <div class="full-row">
-                                    <label>次行への高さ: <span id="lHeight2Val">230</span>px</label>
-                                    <input type="range" id="lHeight2" min="50" max="600" value="230">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="line-box" id="box3">
-                            <input type="text" id="line3" value="内容" style="width:100%; box-sizing:border-box;">
-                            <div class="line-adv-grid adv-ui">
-                                <div><label>サイズ</label><select id="fSize3"></select></div>
-                                <div><label>配置</label><select id="lAlign3"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div>
-                                <div><label>文字色</label><input type="color" id="color3" value="#FFFFFF"></div>
-                                <div><label>縁色</label><input type="color" id="stroke3" value="#464678"></div>
-                                <div class="full-row">
-                                    <label>次行への高さ: <span id="lHeight3Val">230</span>px</label>
-                                    <input type="range" id="lHeight3" min="50" max="600" value="230">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="line-box" id="box4">
-                            <input type="text" id="line4" value="内容" style="width:100%; box-sizing:border-box;">
-                            <div class="line-adv-grid adv-ui">
-                                <div><label>サイズ</label><select id="fSize4"></select></div>
-                                <div><label>配置</label><select id="lAlign4"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div>
-                                <div><label>文字色</label><input type="color" id="color4" value="#FFFFFF"></div>
-                                <div><label>縁色</label><input type="color" id="stroke4" value="#464678"></div>
-                            </div>
-                        </div>
+                        <div class="line-box" id="box2"><input type="text" id="line2" value="サブタイトル" style="width:100%;"><div class="line-adv-grid adv-ui"><div><label>フォント</label><select id="fFamily2" class="font-selector"></select></div><div><label>サイズ</label><select id="fSize2"></select></div><div><label>配置</label><select id="lAlign2"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div><div style="display:flex; gap:5px;"><div style="flex:1;"><input type="color" id="color2" value="#FFFFFF"></div><div style="flex:1;"><input type="color" id="stroke2" value="#464678"></div></div><div class="full-row group"><div class="input-sync-container"><input type="range" id="lHeight2" min="50" max="600" value="230"><input type="number" id="lHeight2Num" class="num-input" value="230"></div></div></div></div>
+                        <div class="line-box" id="box3"><input type="text" id="line3" value="内容1" style="width:100%;"><div class="line-adv-grid adv-ui"><div><label>フォント</label><select id="fFamily3" class="font-selector"></select></div><div><label>サイズ</label><select id="fSize3"></select></div><div><label>配置</label><select id="lAlign3"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div><div style="display:flex; gap:5px;"><div style="flex:1;"><input type="color" id="color3" value="#FFFFFF"></div><div style="flex:1;"><input type="color" id="stroke3" value="#464678"></div></div><div class="full-row group"><div class="input-sync-container"><input type="range" id="lHeight3" min="50" max="600" value="230"><input type="number" id="lHeight3Num" class="num-input" value="230"></div></div></div></div>
+                        <div class="line-box" id="box4"><input type="text" id="line4" value="内容2" style="width:100%;"><div class="line-adv-grid adv-ui"><div><label>フォント</label><select id="fFamily4" class="font-selector"></select></div><div><label>サイズ</label><select id="fSize4"></select></div><div><label>配置</label><select id="lAlign4"><option value="center">中央</option><option value="left">左寄</option><option value="right">右寄</option></select></div><div style="display:flex; gap:5px;"><div style="flex:1;"><input type="color" id="color4" value="#FFFFFF"></div><div style="flex:1;"><input type="color" id="stroke4" value="#464678"></div></div></div></div>
                     </div>
                     <div class="group" style="background:#333; padding:10px; border-radius:8px; display:flex; align-items:center; gap:10px; cursor:pointer;">
                         <input type="checkbox" id="advancedToggle">
-                        <label for="advancedToggle" style="color:var(--save); cursor:pointer; font-weight:bold;">詳細拡張モード (個別サイズ・色・配置)</label>
+                        <label for="advancedToggle" style="color:var(--save); cursor:pointer;">詳細拡張モード (行別フォント・サイズ・配置)</label>
                     </div>
                 </div>
 
                 <div class="section">
                     <div class="section-title">🎨 カラー・フレーム設定</div>
-                    
-                    <div class="group standard-ui">
-                        <div class="row">
-                            <div class="group"><label>共通文字色</label><input type="color" id="globalTextColor" value="#FFFFFF"></div>
-                            <div class="group"><label>共通縁色</label><input type="color" id="globalTextStrokeColor" value="#464678"></div>
-                        </div>
+                    <div class="row standard-ui">
+                        <div class="group"><label>共通文字色</label><input type="color" id="globalTextColor" value="#FFFFFF"></div>
+                        <div class="group"><label>共通縁色</label><input type="color" id="globalTextStrokeColor" value="#464678"></div>
                     </div>
-
                     <div class="row">
                         <div class="group"><label>背景色</label><input type="color" id="bgColor" value="#BEBEE6"></div>
-                        <div class="group"><label>外枠(フレーム)色</label><input type="color" id="borderColor" value="#464678"></div>
+                        <div class="group"><label>外枠色</label><input type="color" id="borderColor" value="#464678"></div>
                     </div>
-                    
                     <div class="group">
-                        <label>外枠の太さ: <span id="borderWidthVal">40</span>px</label>
-                        <input type="range" id="borderWidth" min="0" max="150" value="40">
+                        <label>外枠の太さ</label>
+                        <div class="input-sync-container">
+                            <input type="range" id="borderWidth" min="0" max="150" value="40">
+                            <input type="number" id="borderWidthNum" class="num-input" value="40">
+                        </div>
                     </div>
                 </div>
 
                 <div class="section">
-                    <div class="section-title">🖼️ 画像管理 (ドラッグで優先度変更)</div>
+                    <div class="section-title">🖼️ 画像管理 (☰をドラッグして優先度変更)</div>
                     <div class="group">
-                        <label>新規画像を追加 (上にあるほど手前に表示)</label>
+                        <label>画像を追加</label>
                         <input type="file" id="imageUpload" accept="image/*" multiple>
                     </div>
                     <div id="image-controls-container"></div>
@@ -236,9 +195,9 @@
                 <div class="section">
                     <div class="section-title">📐 全体レイアウト</div>
                     <div class="group">
-                        <label>フォント</label>
+                        <label>基本フォント</label>
                         <div style="display:flex; gap:5px;">
-                            <select id="fontFamily" style="flex:1;">
+                            <select id="fontFamily" class="font-selector" style="flex:1;">
                                 <option value="'Courier New', monospace">等幅（デフォルト）</option>
                                 <option value="sans-serif">和文ゴシック</option>
                                 <option value="serif">和文明朝</option>
@@ -251,11 +210,19 @@
                         <select id="lineCount"><option value="4" selected>4行</option><option value="3">3行</option></select>
                     </div>
                     <div class="group standard-ui">
-                        <label>共通サイズ: <span id="fontSizeVal">200</span>px / 共通行高: <span id="lineHeightVal">230</span>px</label>
-                        <input type="range" id="fontSize" min="20" max="500" value="200">
-                        <input type="range" id="lineHeight" min="50" max="600" value="230">
+                        <label>共通サイズ / 共通行高</label>
+                        <div class="row">
+                            <div class="input-sync-container"><input type="range" id="fontSize" min="20" max="500" value="200"><input type="number" id="fontSizeNum" class="num-input" value="200"></div>
+                            <div class="input-sync-container"><input type="range" id="lineHeight" min="50" max="600" value="230"><input type="number" id="lineHeightNum" class="num-input" value="230"></div>
+                        </div>
                     </div>
-                    <div class="group"><label>文字縁の太さ: <span id="textStrokeWidthVal">10</span>px</label><input type="range" id="textStrokeWidth" min="0" max="50" value="10"></div>
+                    <div class="group">
+                        <label>文字縁の太さ</label>
+                        <div class="input-sync-container">
+                            <input type="range" id="textStrokeWidth" min="0" max="50" value="10">
+                            <input type="number" id="textStrokeWidthNum" class="num-input" value="10">
+                        </div>
+                    </div>
                 </div>
 
                 <button id="saveBtn" class="save-btn">PNG画像として保存</button>
@@ -267,21 +234,46 @@
     <script>
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
-        const ids = ['bgColor','lineCount','line1','line2','line3','line4','color1','color2','color3','color4','stroke1','stroke2','stroke3','stroke4','fSize1','fSize2','fSize3','fSize4','lAlign1','lAlign2','lAlign3','lAlign4','lHeight1','lHeight2','lHeight3','fontFamily','fontSize','lineHeight','textAlignment','borderColor','borderWidth','textStrokeWidth','globalTextColor','globalTextStrokeColor','advancedToggle'];
+        
+        // 全IDリスト
+        const controlIds = [
+            'bgColor','lineCount','line1','line2','line3','line4',
+            'color1','color2','color3','color4','stroke1','stroke2','stroke3','stroke4',
+            'fSize1','fSize2','fSize3','fSize4','lAlign1','lAlign2','lAlign3','lAlign4',
+            'lHeight1','lHeight2','lHeight3','fFamily1','fFamily2','fFamily3','fFamily4',
+            'fontFamily','fontSize','lineHeight','textAlignment','borderColor','borderWidth',
+            'textStrokeWidth','globalTextColor','globalTextStrokeColor','advancedToggle'
+        ];
 
         let uploadedImages = [];
-        const sizeOptions = [50, 80, 100, 120, 150, 180, 200, 250, 300, 350, 400, 500];
+        let systemFontsLoaded = false;
 
-        // プルダウン生成
+        // 1. 初期設定：サイズ選択肢と双方向同期
+        const sizeOptions = [50, 80, 100, 120, 150, 180, 200, 250, 300, 350, 400, 500];
         ['fSize1','fSize2','fSize3','fSize4'].forEach(id => {
-            const select = document.getElementById(id);
-            sizeOptions.forEach(size => select.add(new Option(size + 'px', size, size===200, size===200)));
+            const s = document.getElementById(id);
+            sizeOptions.forEach(v => s.add(new Option(v + 'px', v, v===200, v===200)));
         });
 
-        window.onload = () => { draw(); };
+        // スライダーと数値入力の同期
+        function setupSync(rangeId, numId) {
+            const range = document.getElementById(rangeId);
+            const num = document.getElementById(numId);
+            range.addEventListener('input', () => { num.value = range.value; draw(); });
+            num.addEventListener('input', () => { range.value = num.value; draw(); });
+        }
+        setupSync('fontSize', 'fontSizeNum');
+        setupSync('lineHeight', 'lineHeightNum');
+        setupSync('borderWidth', 'borderWidthNum');
+        setupSync('textStrokeWidth', 'textStrokeWidthNum');
+        setupSync('lHeight1', 'lHeight1Num');
+        setupSync('lHeight2', 'lHeight2Num');
+        setupSync('lHeight3', 'lHeight3Num');
 
-        // 入力監視
-        ids.forEach(id => {
+        // 2. 基本描画
+        window.onload = () => { renderTemplateList(); draw(); };
+
+        controlIds.forEach(id => {
             const el = document.getElementById(id);
             if(!el) return;
             el.addEventListener('input', () => {
@@ -290,12 +282,11 @@
                     document.querySelectorAll('.standard-ui').forEach(e => e.style.display = el.checked ? 'none' : 'flex');
                 }
                 if (id === 'lineCount') document.getElementById('box4').style.display = (el.value === "4") ? 'block' : 'none';
-                if (document.getElementById(id + 'Val')) document.getElementById(id + 'Val').innerText = el.value;
                 draw();
             });
         });
 
-        // 画像管理
+        // 3. 画像管理
         let dragStartIndex = null;
         function renderImageControls() {
             const container = document.getElementById('image-controls-container');
@@ -303,30 +294,47 @@
             const displayList = [...uploadedImages].reverse();
 
             displayList.forEach((data, i) => {
-                const actualIndex = uploadedImages.length - 1 - i;
+                const actualIdx = uploadedImages.length - 1 - i;
                 const box = document.createElement('div');
                 box.className = 'img-box';
                 box.draggable = true;
+                
                 box.innerHTML = `
+                    <div class="drag-handle">☰ 画像 ${actualIdx + 1} (ドラッグして順序変更)</div>
                     <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                        <label style="color:var(--accent)">☰ 画像 ${actualIndex + 1}</label>
-                        <button class="btn-danger" onclick="removeImg(${actualIndex})">削除</button>
+                        <button class="btn-danger" onclick="removeImg(${actualIdx})">削除</button>
+                        <button class="btn-blue" onclick="resetImg(${actualIdx})">位置リセット</button>
                     </div>
-                    <div class="group"><label>スケール: ${data.scale}%</label><input type="range" min="10" max="300" value="${data.scale}" oninput="updateImg(${actualIndex}, 'scale', this.value)"></div>
+                    <div class="group">
+                        <label>スケール: ${data.scale}%</label>
+                        <div class="input-sync-container">
+                            <input type="range" min="10" max="300" value="${data.scale}" oninput="updateImg(${actualIdx}, 'scale', this.value)">
+                            <input type="number" class="num-input" value="${data.scale}" oninput="updateImg(${actualIdx}, 'scale', this.value)">
+                        </div>
+                    </div>
                     <div class="row">
-                        <div class="group"><label>X位置</label><input type="range" min="0" max="1920" value="${data.x}" oninput="updateImg(${actualIndex}, 'x', this.value)"></div>
-                        <div class="group"><label>Y位置</label><input type="range" min="0" max="1080" value="${data.y}" oninput="updateImg(${actualIndex}, 'y', this.value)"></div>
+                        <div class="group"><label>X</label><input type="number" class="num-input" style="width:100%" value="${data.x}" oninput="updateImg(${actualIdx}, 'x', this.value)"></div>
+                        <div class="group"><label>Y</label><input type="number" class="num-input" style="width:100%" value="${data.y}" oninput="updateImg(${actualIdx}, 'y', this.value)"></div>
                     </div>
-                    <button class="btn-blue" style="width:100%; margin-top:8px;" onclick="resetImg(${actualIndex})">位置リセット</button>
                 `;
-                box.addEventListener('dragstart', () => { dragStartIndex = actualIndex; box.classList.add('dragging'); });
-                box.addEventListener('dragend', () => { box.classList.remove('dragging'); dragStartIndex = null; });
-                box.addEventListener('dragover', (e) => e.preventDefault());
-                box.addEventListener('drop', () => { if (dragStartIndex !== null && dragStartIndex !== actualIndex) {
-                    const item = uploadedImages.splice(dragStartIndex, 1)[0];
-                    uploadedImages.splice(actualIndex, 0, item);
-                    renderImageControls(); draw();
-                }});
+
+                // スライダー操作時にドラッグが始まらないように制御
+                const controls = box.querySelectorAll('input, button, select');
+                controls.forEach(c => {
+                    c.onmousedown = (e) => e.stopPropagation();
+                    c.addEventListener('touchstart', (e) => e.stopPropagation());
+                });
+
+                box.ondragstart = () => { dragStartIndex = actualIdx; box.classList.add('dragging'); };
+                box.ondragend = () => { box.classList.remove('dragging'); dragStartIndex = null; };
+                box.ondragover = (e) => e.preventDefault();
+                box.ondrop = () => {
+                    if (dragStartIndex !== null && dragStartIndex !== actualIdx) {
+                        const item = uploadedImages.splice(dragStartIndex, 1)[0];
+                        uploadedImages.splice(actualIdx, 0, item);
+                        renderImageControls(); draw();
+                    }
+                };
                 container.appendChild(box);
             });
         }
@@ -336,7 +344,10 @@
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     const img = new Image();
-                    img.onload = () => { uploadedImages.push({ img, x: 960, y: 540, scale: 70 }); renderImageControls(); draw(); };
+                    img.onload = () => { 
+                        uploadedImages.push({ img, x: 960, y: 540, scale: 70, src: ev.target.result }); 
+                        renderImageControls(); draw(); 
+                    };
                     img.src = ev.target.result;
                 };
                 reader.readAsDataURL(file);
@@ -347,22 +358,111 @@
         function resetImg(idx) { uploadedImages[idx].x = 960; uploadedImages[idx].y = 540; uploadedImages[idx].scale = 70; renderImageControls(); draw(); }
         function removeImg(idx) { uploadedImages.splice(idx, 1); renderImageControls(); draw(); }
 
+        // 4. フォント読込
         async function loadSystemFonts() {
             if (!window.queryLocalFonts) return alert("ブラウザ非対応です");
             try {
                 const fonts = await window.queryLocalFonts();
-                const select = document.getElementById('fontFamily');
+                const selectors = document.querySelectorAll('.font-selector');
                 const existing = new Set();
-                fonts.forEach(f => { if(!existing.has(f.family)) { select.add(new Option(f.family, `"${f.family}"`)); existing.add(f.family); } });
+                fonts.forEach(f => {
+                    if(!existing.has(f.family)) {
+                        selectors.forEach(s => s.add(new Option(f.family, `"${f.family}"`)));
+                        existing.add(f.family);
+                    }
+                });
+                systemFontsLoaded = true;
                 alert("読込完了");
             } catch (err) { console.error(err); }
         }
 
+        // 5. テンプレート管理
+        function saveCurrentToTemplates() {
+            const name = document.getElementById('newTemplateName').value.trim();
+            if(!name) return alert("名前を入力してください");
+            
+            const config = {
+                controls: {},
+                images: uploadedImages.map(it => ({ x: it.x, y: it.y, scale: it.scale, src: it.src }))
+            };
+            controlIds.forEach(id => {
+                const el = document.getElementById(id);
+                config.controls[id] = el.type === 'checkbox' ? el.checked : el.value;
+            });
+
+            const templates = JSON.parse(localStorage.getItem('imggen_templates') || '{}');
+            templates[name] = config;
+            try {
+                localStorage.setItem('imggen_templates', JSON.stringify(templates));
+                alert(`「${name}」を保存しました`);
+                renderTemplateList();
+            } catch(e) { alert("保存容量オーバーです。画像を減らすか不要な設定を消してください。"); }
+        }
+
+        function renderTemplateList() {
+            const list = document.getElementById('templateList');
+            const templates = JSON.parse(localStorage.getItem('imggen_templates') || '{}');
+            list.innerHTML = '';
+            Object.keys(templates).forEach(name => {
+                const item = document.createElement('div');
+                item.className = 'template-item';
+                item.innerHTML = `
+                    <span>${name}</span>
+                    <div>
+                        <button class="btn-blue" onclick="loadTemplate('${name}')">読込</button>
+                        <button class="btn-danger" onclick="deleteTemplate('${name}')">削除</button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function loadTemplate(name) {
+            const templates = JSON.parse(localStorage.getItem('imggen_templates') || '{}');
+            const config = templates[name];
+            if(!config) return;
+
+            // コントロール復元
+            Object.keys(config.controls).forEach(id => {
+                const el = document.getElementById(id);
+                if(el) {
+                    if(el.type === 'checkbox') el.checked = config.controls[id];
+                    else el.value = config.controls[id];
+                    el.dispatchEvent(new Event('input'));
+                }
+            });
+
+            // 画像復元
+            uploadedImages = [];
+            let loadedCount = 0;
+            if(!config.images || config.images.length === 0) { renderImageControls(); draw(); return; }
+            
+            config.images.forEach(data => {
+                const img = new Image();
+                img.onload = () => {
+                    uploadedImages.push({ img, x: data.x, y: data.y, scale: data.scale, src: data.src });
+                    loadedCount++;
+                    if(loadedCount === config.images.length) { renderImageControls(); draw(); }
+                };
+                img.src = data.src;
+            });
+        }
+
+        function deleteTemplate(name) {
+            if(!confirm(`「${name}」を削除しますか？`)) return;
+            const templates = JSON.parse(localStorage.getItem('imggen_templates') || '{}');
+            delete templates[name];
+            localStorage.setItem('imggen_templates', JSON.stringify(templates));
+            renderTemplateList();
+        }
+
+        // 6. 描画メイン
         function draw() {
             const isAdv = document.getElementById('advancedToggle').checked;
             ctx.fillStyle = document.getElementById('bgColor').value;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+            // 画像
             uploadedImages.forEach(item => {
                 const baseScale = Math.min(canvas.width / item.img.width, canvas.height / item.img.height);
                 const fScale = baseScale * (item.scale / 100);
@@ -370,16 +470,17 @@
                 ctx.drawImage(item.img, item.x - (w/2), item.y - (h/2), w, h);
             });
 
+            // テキスト
             ctx.textBaseline = "middle"; ctx.lineJoin = "miter"; ctx.miterLimit = 2;
             const lineCount = parseInt(document.getElementById('lineCount').value);
-            const gHeight = parseInt(document.getElementById('lineHeight').value);
-            const gAlign = document.getElementById('textAlignment').value;
+            const globalLineHeight = parseInt(document.getElementById('lineHeight').value);
+            const globalAlign = document.getElementById('textAlignment').value;
+            const globalFont = document.getElementById('fontFamily').value;
             const sWidth = parseInt(document.getElementById('textStrokeWidth').value);
-            const font = document.getElementById('fontFamily').value;
 
             let totalH = 0; const hList = [];
             for (let i = 0; i < lineCount - 1; i++) {
-                const h = isAdv ? parseInt(document.getElementById(`lHeight${i+1}`).value) : gHeight;
+                const h = isAdv ? parseInt(document.getElementById(`lHeight${i+1}`).value) : globalLineHeight;
                 hList.push(h); totalH += h;
             }
 
@@ -387,8 +488,9 @@
             for (let i = 0; i < lineCount; i++) {
                 const idx = i + 1;
                 const txt = document.getElementById(`line${idx}`).value;
-                const align = isAdv ? document.getElementById(`lAlign${idx}`).value : gAlign;
+                const align = isAdv ? document.getElementById(`lAlign${idx}`).value : globalAlign;
                 const size = isAdv ? parseInt(document.getElementById(`fSize${idx}`).value) : parseInt(document.getElementById('fontSize').value);
+                const font = isAdv ? document.getElementById(`fFamily${idx}`).value : globalFont;
                 const color = isAdv ? document.getElementById(`color${idx}`).value : document.getElementById('globalTextColor').value;
                 const sColor = isAdv ? document.getElementById(`stroke${idx}`).value : document.getElementById('globalTextStrokeColor').value;
 
@@ -396,7 +498,7 @@
                 let x = canvas.width / 2;
                 if(align==='left') x=150; if(align==='right') x=canvas.width-150;
 
-                ctx.font = `bold ${size}px ${font}`;
+                ctx.font = `bold ${size}px ${font || globalFont}`;
                 ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 15;
                 if (sWidth > 0) { ctx.strokeStyle = sColor; ctx.lineWidth = sWidth; ctx.strokeText(txt, x, currY); }
                 ctx.shadowColor = "transparent"; ctx.fillStyle = color;
@@ -404,6 +506,7 @@
                 if (i < lineCount - 1) currY += hList[i];
             }
 
+            // 外枠
             const bWidth = parseInt(document.getElementById('borderWidth').value);
             if (bWidth > 0) {
                 ctx.strokeStyle = document.getElementById('borderColor').value;
@@ -412,33 +515,9 @@
             }
         }
 
-        function saveToBrowser() {
-            const config = {};
-            ids.forEach(id => {
-                const el = document.getElementById(id);
-                config[id] = el.type === 'checkbox' ? el.checked : el.value;
-            });
-            localStorage.setItem('imggen_v14_final', JSON.stringify(config));
-            alert("保存しました");
-        }
-
-        function loadFromBrowser() {
-            const saved = localStorage.getItem('imggen_v14_final');
-            if (!saved) return alert("データなし");
-            const config = JSON.parse(saved);
-            ids.forEach(id => {
-                const el = document.getElementById(id);
-                if (el && config[id] !== undefined) {
-                    if (el.type === 'checkbox') el.checked = config[id];
-                    else el.value = config[id];
-                    el.dispatchEvent(new Event('input'));
-                }
-            });
-        }
-
         document.getElementById('saveBtn').addEventListener('click', () => {
             const link = document.createElement('a');
-            link.download = `output_${Date.now()}.png`;
+            link.download = `pro_output_${Date.now()}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
         });
