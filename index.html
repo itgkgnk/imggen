@@ -137,7 +137,17 @@
             <div class="editor-content">
                 <header><h2>画像生成ツール (1920x1080)</h2></header>
 
-                <!-- 1. 全体レイアウト設定（一番上に移動） -->
+                <!-- 1. テンプレート管理（一番上に移動） -->
+                <div class="section">
+                    <div class="section-title">📁 テンプレート管理</div>
+                    <div class="group">
+                        <input type="text" id="tplName" placeholder="保存する名前を入力...">
+                        <button class="btn-blue" style="margin-top:5px; font-weight:bold;" onclick="storeTemplate()">現在の構成を保存</button>
+                    </div>
+                    <div class="template-list" id="tplList"></div>
+                </div>
+
+                <!-- 2. 全体レイアウト設定 -->
                 <div class="section">
                     <div class="section-title">📐 全体レイアウト設定</div>
                     <div class="group">
@@ -166,16 +176,6 @@
                         <label>文字縁の太さ: <span id="textStrokeWidthDisp">10</span>px</label>
                         <div class="sync-row"><input type="range" id="textStrokeWidth" min="0" max="50" value="10"><input type="number" id="textStrokeWidthN" class="num-in" value="10"></div>
                     </div>
-                </div>
-
-                <!-- 2. テンプレート管理 -->
-                <div class="section">
-                    <div class="section-title">📁 テンプレート管理</div>
-                    <div class="group">
-                        <input type="text" id="tplName" placeholder="保存する名前を入力...">
-                        <button class="btn-blue" style="margin-top:5px; font-weight:bold;" onclick="storeTemplate()">現在の構成を保存</button>
-                    </div>
-                    <div class="template-list" id="tplList"></div>
                 </div>
 
                 <!-- 3. テキスト設定（固定4行） -->
